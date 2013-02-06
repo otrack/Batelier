@@ -105,12 +105,7 @@ abstract public class MessageStream {
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.SimpleCommand"));
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.ArrayCommutativeCommand"));
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.ReadWriteRegisterCommand"));
-            
-			/* Database Protocol */
-			idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.database.ReadReplyMessage"));
-			idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.database.ReadRequestMessage"));
-			idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.database.certificationprotocol.genuine.VoteMessage"));
-            
+                        
         } catch (ClassNotFoundException e1) { //All or nothing.
             e1.printStackTrace();
             for(Integer k: idToMessage.keySet()){

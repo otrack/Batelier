@@ -21,14 +21,12 @@ class PMNACK extends PMessage implements Cloneable{
     private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
     int timestamp;
-//    Integer highestP;
     
     public PMNACK(){}
     
     public PMNACK(String streamName, int instance, int ts, Integer highestPrmssd, int swid) {
         super(NACK, streamName, instance, swid);
         this.timestamp = ts;
-//        this.highestP = highestPrmssd;
     }
     
     @Override

@@ -43,7 +43,7 @@ public class ConstantPool {
     public static final int BDB_DL = 0;         // If BDB is used for log keeping.	
     public static final boolean MESSAGE_STREAM_DEBUG = false;	
     public static final int QUEUES_DL = 0;
-    public static final int TEST_DL=0;
+    public static final int TEST_DL=1;
    
     /**
      * Reliable Broadcast stuff

@@ -24,9 +24,9 @@ import org.junit.Test;
 
 public class AMCastTest {
 
-	private static final int nnodes=6;
-	private static final int ngroups=2;
-	private static final int nmessages=1000;
+	private static final int nnodes=3;
+	private static final int ngroups=1;
+	private static final int nmessagesPerNode=1000;
 	
 	private static Map<Node,Membership> network;
 	private static Map<Node,WanAMCastStream> streams;
@@ -53,7 +53,7 @@ public class AMCastTest {
 	@Test
 	public void simpleAtomicMulticastTest() throws InterruptedException{
 		
-		for(int k=0; k<nmessages; k++){
+		for(int k=0; k<nmessagesPerNode; k++){
 			for(Node n: network.keySet()){
 
 				// Build some random recipient groups
@@ -64,7 +64,8 @@ public class AMCastTest {
 				}
 
 				// Multicast the message
-				WanAMCastMessage msg = new WanAMCastMessage(new Byte[1000],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
+				WanAMCastMessage msg = new WanAMCastMessage(new Byte[100000],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
+				System.out.println("Sending message "+msg);
 				streams.get(n).atomicMulticast(msg);
 				
 				// Check it was received

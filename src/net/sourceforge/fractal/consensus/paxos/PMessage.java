@@ -11,15 +11,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 
-import net.sourceforge.fractal.Message;
 import net.sourceforge.fractal.Messageable;
-import net.sourceforge.fractal.utils.SerializationUtils;
+import net.sourceforge.fractal.UMessage;
 /**   
 * @author L. Camargos
 * 
 */ 
 
-public class PMessage extends Message {
+public class PMessage extends UMessage {
   
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
@@ -37,30 +36,14 @@ public class PMessage extends Message {
     //Common Paxos Messages' fields.
     byte type;
     String tag;
-    int instance;
-    Serializable serializable;
-    
+    int instance;   
     
     public PMessage(byte type, String streamName, int instance, int swid) {
-        this.type = type;
+    	super(null,swid);
         this.tag = streamName;
         this.instance = instance;
-        this.source = swid;
+    	this.type = type;
     }
-    
-//    static public String getMessageType(byte mtype){
-//        switch(mtype){
-//        case BROADCAST : return "BROADCAST";
-//        case PHASE1_A  : return "PHASE1_A";
-//        case PHASE1_B  : return "PHASE1_B";
-//        case PHASE2_A  : return "PHASE2_A";
-//        case PHASE2_B  : return "PHASE2_B";
-//        case NACK      : return "NACK";
-//        case DECISION  : return "DECISION";
-//        case LOGREQUEST: return "LOGREQUEST";
-//        default        : return "NOTYPE";
-//        }
-//    }
     
     public String toString(){
         return type + "(" + instance +")";
@@ -72,12 +55,6 @@ public class PMessage extends Message {
         tag = in.readUTF();
         instance = in.readInt();
         type = in.readByte();
-        serializable = (Serializable)in.readObject();
-//        try{
-//        	serializable = SerializationUtils.byteArrayToSerializable((byte[]) in.readObject());
-//        }catch(Exception e){
-//        	e.printStackTrace();
-//        }	
     }
     
     @Override
@@ -85,14 +62,5 @@ public class PMessage extends Message {
         super.writeExternal(out);
         out.writeUTF(tag);
         out.writeInt(instance);
-        out.writeByte(type);
-//        byte[] byteValue=null;
-//        try{
-//        	byteValue = SerializationUtils.serializableToByteArray(serializable);
-//        } catch (IOException e) {
-//        	e.printStackTrace();
-//        }
-//	    out.writeObject(byteValue);
-        out.writeObject(serializable);
-    }
+        out.writeByte(type);    }
 };

@@ -5,6 +5,7 @@ file attached to it to see how you can use it, edit or distributed.
 
 
 package net.sourceforge.fractal.broadcast;
+
 /**   
 * @author P. Sutra
 * 

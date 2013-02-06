@@ -17,7 +17,6 @@ import net.sourceforge.fractal.Messageable;
 
 
 class PMBroadcast extends PMessage implements Cloneable{
-    //transient private int validity = 1; //If this proposal can be proposed in future instances, set it to how much instances.
     
     private static final long serialVersionUID = Messageable.FRACTAL_MID;
     

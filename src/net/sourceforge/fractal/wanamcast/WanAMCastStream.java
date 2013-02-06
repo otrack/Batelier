@@ -10,7 +10,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
@@ -26,6 +25,8 @@ import net.sourceforge.fractal.multicast.MulticastStream;
 import net.sourceforge.fractal.utils.CollectionUtils;
 import net.sourceforge.fractal.utils.PerformanceProbe.TimeRecorder;
 import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
+
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 
 /**   
 * @author P. Sutra
@@ -71,7 +72,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private BlockingQueue<WanAMCastMessage> intraGroupChannel;
 	private HashSet<WanAMCastMessage> consensusDelivered;
-	private Map<String,Integer> aDelivered; // Does not contain msg with gDest={myGroup.name()}
+	private ConcurrentLinkedHashMap<String,Integer> aDelivered; // Does not contain msg with gDest={myGroup.name()}
 	
 	Thread mainThread;
 	
@@ -106,15 +107,9 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		
 		// FIXME We can't garbage according to a FIFO criterion, cause
 		// this primitive does not ensure causal ordering.
-		aDelivered = new LinkedHashMap<String, Integer>(5000,0.75f,true){
-			private static final long serialVersionUID = 1L;
-			private static final int MAX_ENTRIES = 5000;
-
-			@SuppressWarnings("unchecked")
-			protected boolean removeEldestEntry(Map.Entry eldest) {
-				return size() > MAX_ENTRIES;
-			}
-		};
+		aDelivered = new ConcurrentLinkedHashMap.Builder<String,Integer>()
+				.maximumWeightedCapacity(5000)
+				.build();
 
 		this.stages = new HashMap<WanAMCastMessage, Integer>();
 		this.stage1 = new HashMap<WanAMCastMessage, HashMap<String,Integer>>();

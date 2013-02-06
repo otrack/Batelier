@@ -22,18 +22,21 @@ import java.util.regex.Pattern;
 
 import net.sourceforge.fractal.utils.Pair;
 
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+
 public class UMessage extends Message implements Cloneable, Comparable<UMessage>{
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
-	
+
+	private static final ConcurrentLinkedHashMap<String,UMessage> cache = 
+			new ConcurrentLinkedHashMap.Builder<String,UMessage>()
+			.maximumWeightedCapacity(5000)
+			.build();
 	private static final String uniqueIdSeparator=":"; // to construct the uniqueness of swid
-	private static AtomicInteger rbmCounter; // logical clock of site
-	
+	private static final AtomicInteger rbmCounter = new AtomicInteger(0); // logical clock of site
+	private static final Pattern p = Pattern.compile("([^:]*):([^:]*)");
+
 	protected String swid; // a system wide unique id
-	
-	static{
-		rbmCounter = new AtomicInteger(0);
-	}
 	
 	public Serializable serializable; 	
 	
@@ -108,13 +111,20 @@ public class UMessage extends Message implements Cloneable, Comparable<UMessage>
 			}
 		}
 	}
+
+    public Object readResolve() {
+    	if(!cache.containsKey(swid)){
+    		cache.put(swid,this);
+    	}
+        return cache.get(swid);
+    }
+
 	
 	public String toString(){
 		return '<'+swid+','+source+','+serializable+'>';
 	}
 
 	public Pair<Integer,Integer> uidToObject(){
-		Pattern p = Pattern.compile("([^:]*):([^:]*)");
 		Matcher m1 = p.matcher(this.swid);
 		m1.find();
 		return new Pair<Integer,Integer>(Integer.valueOf(m1.group(1)),Integer.valueOf(m1.group(2)));

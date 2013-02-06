@@ -12,6 +12,12 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.Executor;
 
+
+/** To run this script, you must belong to the sudoers group 
+ * 	and have permission to execute 'sudo ifconfig' without password request. 
+ *  In addition, gksudo must be present on your system 
+ *  and the dummynet module must be available (modprobe -a dummy).
+ **/
 public class DummyNetwork {
 
 	private static final String lub="10.0.0.0";
@@ -23,10 +29,6 @@ public class DummyNetwork {
 	public static Map<Node,Membership> create(int nnodes){
 
 		try {
-			
-			cmdL=CommandLine.parse("sudo modprobe -a dummy"); 
-			if(executor.execute(cmdL)!=0)
-				return null;
 			
 			cmdL=CommandLine.parse("sudo ifconfig dummy0 "+lub+" up");
 			if(executor.execute(cmdL)!=0)
@@ -56,7 +58,7 @@ public class DummyNetwork {
 	
 	public static Map<Node,Membership> create(int nnodes, int ngroups){
 		if(ConstantPool.TEST_DL != 1 ){
-			System.err.println("ConstantPool.TEST_DL mist equal 1");
+			System.err.println("ConstantPool.TEST_DL must equal 1");
 			System.exit(-1);
 		}
 		 create(nnodes);
