@@ -1,0 +1,58 @@
+<?xml version="1.0" ?>
+
+<FRACTAL>
+	
+	<globals logFile="/tmp/logFile"/>
+
+	
+	<BootstrapIdentity>
+		<!-- There can be only one idip mapping in the file -->
+		<nodelist>
+<!-- HOME - ->
+			<node id="0" ip="192.168.0.90"/>
+			<node id="1" ip="192.168.0.90"/>
+			<node id="2" ip="192.168.0.90"/>
+			<node id="3" ip="192.168.0.90"/>
+<!- - -->
+<!-- USI -->
+			<node id="0" ip="192.168.76.119"/>
+			<node id="1" ip="192.168.76.119"/>
+			<node id="2" ip="192.168.76.119"/>
+			<node id="3" ip="192.168.76.119"/>
+<!-- -->
+		</nodelist>
+	</BootstrapIdentity>
+	
+	<BootstrapMembership>
+		<grouplist>
+			<group name="PRP" ip="239.0.1.1" port="8879">  
+				<node id="0"/>
+				<node id="1"/>
+			</group>
+			<group name="ACC" ip="239.0.1.2" port="8880">  
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+			</group>
+			<group name="LRN" ip="239.0.1.3" port="8881"> 
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>
+		</grouplist>
+	</BootstrapMembership>
+	
+	<BWABConsStream instantiate="*" name="BWAB">
+		<CoordinatorPolicy type="LEADER_RROBIN"/>
+		<ACCEPTOR_GROUP name="ACC"/>
+		<PROPOSER_GROUP name="PRP"/>
+		<LEARNER_GROUP name="LRN"/>
+	</BWABConsStream>
+
+	<RWABConsStream instantiate="*" name="RWAB">
+		<CoordinatorPolicy type="LEADER_RROBIN"/>
+		<ACCEPTOR_GROUP name="ACC"/>
+		<PROPOSER_GROUP name="PRP"/>
+		<LEARNER_GROUP name="LRN"/>
+	</RWABConsStream>
+</FRACTAL>

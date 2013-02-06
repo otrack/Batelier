@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+
+<FRACTAL>
+	
+	<globals logFile="/tmp/logFile"/>
+	
+	<BootstrapIdentity>
+		<nodelist>
+			<node id="1" ip="127.0.0.1"/>
+		</nodelist>
+	</BootstrapIdentity>
+	
+	<BootstrapMembership>
+		<grouplist>
+			<group name="0" port="8884">
+				<node id="1"/>
+			</group>
+		</grouplist>
+	</BootstrapMembership>
+		
+	 <PaxosStream instantiate="*" name="PAXOS">
+                <CoordinatorPolicy type="LEADER_CONSTANT"/>
+                <ACCEPTOR_GROUP name="0"/>
+                <PROPOSER_GROUP name="0"/>
+                <LEARNER_GROUP name="0"/>
+     </PaxosStream>
+
+    <RBroadcastStream instantiate="*" group="0" name="RB" />
+
+	<ABCastStream instantiate="*" name="AB" consensusStreamName="PAXOS" rbcastStreamName="RB" />
+		
+</FRACTAL>

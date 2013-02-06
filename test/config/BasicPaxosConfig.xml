@@ -1,0 +1,63 @@
+<?xml version="1.0" ?>
+
+<FRACTAL>
+	
+	<globals logFile="/tmp/logFile"/>
+
+	
+	<BootstrapIdentity>
+		<!-- There can be only one idip mapping in the file -->
+		<nodelist>
+<!-- HOME -->
+			<node id="0" ip="192.168.0.90"/>
+			<node id="1" ip="192.168.0.90"/>
+			<node id="2" ip="192.168.0.90"/>
+			<node id="3" ip="192.168.0.90"/>
+<!- - -->
+<!-- USI - ->
+			<node id="0" ip="192.168.70.107"/>
+			<node id="1" ip="192.168.70.107"/>
+			<node id="2" ip="192.168.70.107"/>
+			<node id="3" ip="192.168.70.107"/>
+<!-- -->
+		</nodelist>
+	</BootstrapIdentity>
+	
+	<BootstrapMembership>
+		<grouplist>
+			<group name="P_PROPOSERS" ip="239.0.1.1" port="8879">
+				<node id="0"/>
+				<node id="1"/>
+			</group>
+			<group name="P_ACCEPTORS" ip="239.0.1.2" port="8880">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+			</group>
+			<group name="P_LEARNERS" ip="239.0.1.3" port="8881">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>
+		</grouplist>
+	</BootstrapMembership>
+	
+	<!-- 
+	PaxosStream defines an Consensus stream. 
+	
+	There can be several streams.
+	They are tagged by their name. Be aware that substreams of streams can be created by other protcols. 
+		Their names will be "PARENTSTREAMNAME:substreamidentifier". So, don't name streams in a way that
+		could generate name colisions.
+	To make them completelly independent one should create independent groups for each one. 
+	
+	instantiate will say which ids should join the enclosed stream. TODO: allow the specification of groups.
+	can use ranges ("-") and list (",") to specify it.
+	-->
+	<PaxosStream instantiate="0-3" name="Paxos">
+		<CoordinatorPolicy type="LEADER_RROBIN"/>
+		<ACCEPTOR_GROUP name="P_ACCEPTORS"/>
+		<PROPOSER_GROUP name="P_PROPOSERS"/>
+		<LEARNER_GROUP name="P_LEARNERS"/>
+	</PaxosStream>
+</FRACTAL>

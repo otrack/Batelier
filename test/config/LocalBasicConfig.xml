@@ -1,0 +1,197 @@
+<?xml version="1.0" ?>
+
+<FRACTAL>
+	
+	<globals logFile="/tmp/logFile"/>
+	
+	<BootstrapIdentity>
+		<!-- There can be only one idip mapping in the file -->
+		<nodelist>
+<!-- HOME - ->
+			<node id="0" ip="192.168.0.90"/>
+			<node id="1" ip="192.168.0.90"/>
+			<node id="2" ip="192.168.0.90"/>
+			<node id="3" ip="192.168.0.90"/>
+<!- - -->
+<!-- USI -->
+			<node id="0" ip="192.168.76.131"/>
+			<node id="1" ip="192.168.76.131"/>
+			<node id="2" ip="192.168.76.131"/>
+			<node id="3" ip="192.168.76.131"/>
+<!-- -->
+		</nodelist>
+	</BootstrapIdentity>
+	
+	<BootstrapMembership>
+		<!-- There can be several idgp mapping in the file.  -->
+		<!-- 
+		Creates a group and each node (identified by its id) is given an igid inside this group. 
+		If not specified a igid, ids in the group will be given by the order in the group.
+		Currently only automatic igid is implemented
+		-->
+		
+		<grouplist>			
+			<!-- This is for single multicast. -->
+<!--
+			<group name="TOTALGROUP" ip="239.0.0.1" port="8878">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+				<node id="3"/>
+			</group>
+
+			<group name="TOTALGROU2" ip="239.0.0.2" port="8878">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+				<node id="3"/>
+			</group>
+
+			<group name="TOTALGROU3" ip="239.0.0.3" port="8878">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+				<node id="3"/>
+			</group>
+-->	
+			<!-- These are for Paxos. -->			
+<!--
+			<group name="P_PRP" ip="239.0.1.1" port="8879">
+				<node id="0"/>
+				<node id="1"/>
+			</group>
+			<group name="P_ACC" ip="239.0.1.2" port="8880">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+			</group>
+			<group name="P_LRN" ip="239.0.1.3" port="8881">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>
+
+-->
+			<!-- These are for AtomicBroadcast. -->			
+<!--
+			<group name="AB_PRP" ip="239.0.2.1" port="8882">
+				<node id="0"/>
+				<node id="1"/>
+			</group>
+			<group name="AB_ACC" ip="239.0.2.2" port="8883">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+			</group>
+			<group name="AB_LRN" ip="239.0.2.3" port="8884">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>
+-->
+			
+			<!-- These are for PaxosCommit. -->
+<!-- -->
+			<group name="PC_PRP" ip="239.0.3.1" port="8885">
+				<node id="0"/>
+				<node id="1"/>
+			</group>
+			<group name="PC_ACC" ip="239.0.3.2" port="8886">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+			</group>
+			<group name="PC_LRN" ip="239.0.3.3" port="8888">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>
+			
+			<group name="PC_MNG" ip="239.0.3.4" port="8889">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>				
+<!--	-->
+			<!-- These are for ABCCommit. -->
+<!--
+			<group name="ABCC_PRP" ip="239.0.4.1" port="8890">
+				<node id="0"/>
+				<node id="1"/>
+			</group>
+			<group name="ABCC_ACC" ip="239.0.4.2" port="8891">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="2"/>
+			</group>
+			<group name="ABCC_LRN" ip="239.0.4.3" port="8892">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>
+			
+			<group name="ABCC_MNG" ip="239.0.4.4" port="8893">
+				<node id="0"/>
+				<node id="1"/>
+				<node id="3"/>
+			</group>				
+-->
+		</grouplist>
+	</BootstrapMembership>
+			
+	<!-- 
+	PaxosStream defines an Consensus stream. 
+	
+	There can be several streams.
+	They are tagged by their name. Be aware that substreams of streams can be created by other protcols. 
+		Their names will be "PARENTSTREAMNAME:substreamidentifier". So, don't name streams in a way that
+		could generate name colisions.
+	To make them completelly independent one should create independent groups for each one. 
+	
+	instantiate will say which ids should join the enclosed stream. TODO: allow the specification of groups.
+	can use ranges ("-") and list (",") to specify it.
+	-->
+<!--
+		<PaxosStream instantiate="0-3" name="p">
+		<CoordinatorPolicy type="LEADER_RROBIN"/>
+		<ACCEPTOR_GROUP name="P_ACC"/>
+		<PROPOSER_GROUP name="P_PRP"/>
+		<LEARNER_GROUP name="P_LRN"/>
+	</PaxosStream>
+-->
+	
+<!--
+	<PaxosStream instantiate="0-3" name="pABC">
+		<CoordinatorPolicy type="LEADER_CONSTANT"/>
+		<ACCEPTOR_GROUP name="AB_ACC"/>
+		<PROPOSER_GROUP name="AB_PRP"/>
+		<LEARNER_GROUP name="AB_LRN"/>
+	</PaxosStream>
+
+	<ABCastStream instantiate="0-3" name="ABCEx" consensusMainStream="pABC" retryInterval="150"/>
+-->
+<!-- - ->
+	<PaxosStream instantiate="0-3" name="ABCC">
+		<CoordinatorPolicy type="LEADER_CONSTANT"/>
+		<ACCEPTOR_GROUP name="ABCC_ACC"/>
+		<PROPOSER_GROUP name="ABCC_PRP"/>
+		<LEARNER_GROUP name="ABCC_LRN"/>
+	</PaxosStream>
+
+	<ABCastStream instantiate="0-3" name="ABCastCommit" consensusMainStream="ABCC" retryInterval="150"/>
+	<ABCCommitStream instantiate="0-3" name="ABCCommit" abcastStream="ABCastCommit" managerGroup="ABCC_MNG"/>
+<!- - -->
+	
+	
+	
+<!-- -->
+	<PaxosStream instantiate="0-3" name="pc">
+		<CoordinatorPolicy type="LEADER_RROBIN"/>
+		<ACCEPTOR_GROUP name="PC_ACC"/>
+		<PROPOSER_GROUP name="PC_PRP"/>
+		<LEARNER_GROUP name="PC_LRN"/>
+	</PaxosStream>
+		
+	<PaxosCommitStream instantiate="0,1,3" name="PCEx" consensusMainStream="pc" managerGroup="PC_MNG" />	
+<!--	-->		
+</FRACTAL>

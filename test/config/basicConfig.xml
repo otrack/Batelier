@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+
+<FRACTAL>
+
+	<globals logFile="/tmp/logFile"/>
+
+<BootstrapIdentity>
+	<!-- There can be only one idip mapping in the file -->
+	<nodelist>
+		<node id="0" ip0="192.168.0.2" ip1="192.168.0.2"/>
+		<node id="1" ip="192.168.0.3"/>
+		<node id="2" ip="192.168.0.4"/>
+		<node id="3" ip="192.168.0.5"/>
+		<node id="4" ip="192.168.0.6"/>
+		<node id="5" ip="192.168.0.7"/>
+		<node id="6" ip="192.168.0.8"/>
+		<node id="7" ip="192.168.0.9"/>
+		<node id="8" ip="192.168.0.10"/>
+		<node id="9" ip="192.168.0.11"/>
+		<node id="10" ip="192.168.0.12"/>
+		<node id="11" ip="192.168.0.13"/>
+		<node id="12" ip="192.168.0.14"/>
+		<node id="13" ip="192.168.0.15"/>
+		<node id="14" ip="192.168.0.16"/>
+		<node id="15" ip="192.168.76.174"/>
+		<node id="16" ip="192.168.76.174"/>
+	</nodelist>
+</BootstrapIdentity>
+	
+<BootstrapMembership>
+	<!-- There can be several idgp mapping in the file.  -->
+	<!-- 
+		Creates a group and each node (identified by its id) is given an igid inside this group. 
+		If not specified a igid, ids in the group will be given by the order in the group.
+		Currently only automatic igid is implemented
+	-->
+	<grouplist>
+		<group name="PROPOSERS" ip="239.0.0.2" port="8878">
+			<node id="0" ifaceNo="0"/>
+			<node id="1" ifaceNo="0"/>
+			<node id="2" ifaceNo="0"/>
+			<node id="3" ifaceNo="0"/>
+			<node id="4" ifaceNo="0"/>
+			<node id="5" ifaceNo="0"/>
+			<node id="6" ifaceNo="0"/>
+			<node id="7" ifaceNo="0"/>
+			<node id="8" ifaceNo="0"/>
+			<node id="9" ifaceNo="0"/>
+			<node id="10" ifaceNo="0"/>
+			<node id="11" ifaceNo="0"/>
+			<node id="12" ifaceNo="0"/>
+			<node id="13" ifaceNo="0"/>
+			<node id="14" ifaceNo="0"/>
+			<node id="15" ifaceNo="0"/>
+			<node id="16" ifaceNo="0"/>
+		</group>
+		<group name="ACCEPTORS" ip="239.0.0.3" port="8878">
+			<node id="0"/>
+			<node id="1"/>
+			<node id="2"/>
+			<node id="3"/>
+			<node id="4"/>
+			<node id="5"/>
+			<node id="6"/>
+			<node id="7"/>
+			<node id="8"/>
+			<node id="9"/>
+			<node id="10"/>
+			<node id="11"/>
+			<node id="12"/>
+			<node id="13"/>
+			<node id="14"/>
+			<node id="15"/>
+			<node id="16"/>
+		</group>
+		<group name="LEARNERS" ip="239.0.0.4" port="8878">
+			<node id="0"/>
+			<node id="1"/>
+			<node id="2"/>
+			<node id="3"/>
+			<node id="4"/>
+			<node id="5"/>
+			<node id="6"/>
+			<node id="7"/>
+			<node id="8"/>
+			<node id="9"/>
+			<node id="10"/>
+			<node id="11"/>
+			<node id="12"/>
+			<node id="13"/>
+			<node id="14"/>
+			<node id="15"/>
+			<node id="16"/>
+		</group>
+	</grouplist>
+</BootstrapMembership>
+
+
+<!-- Paxos Consensus. instantiate will say which ids (of this host) should start the enclosed instances. There can be sevearal PaxosC-->
+	<!-- There can be several Paxos Consensus (PaxosC) streams (collection of instances). They are tagged by their name -->
+	<!-- To make them completelly independent one should create independent groups for each one. -->
+<PaxosC instantiate="*" name="DEFAULT">
+	<CoordinatorPolicy type="RoundRobin"/>
+	<ACCEPTOR_GROUP name="ACCEPTORS"/>
+	<PROPOSER_GROUP name="PROPOSERS"/>
+	<LEARNER_GROUP name="LEARNERS"/>
+</PaxosC>
+
+</FRACTAL>

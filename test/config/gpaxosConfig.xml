@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<FRACTAL>
+
+  <globals logFile="/home/otrack/These/travaux/telex/fractal.log"/>
+
+  <BootstrapIdentity>
+    <nodelist>
+     <node id="0" ip="127.0.0.1"/> 
+     <node id="1" ip="192.168.3.6"/> 
+     <node id="2" ip="192.168.3.7"/> 
+    </nodelist>  
+  </BootstrapIdentity>
+  
+  <BootstrapMembership>
+    <grouplist>
+      <group name="0" port="8880" tcp="true">
+        <node id="0" />
+      </group>
+      <group name="1" port="8881" tcp="true">
+        <node id="0" />
+      </group>
+      <group name="2" port="8882" tcp="true">
+        <node id="0" />
+      </group>      
+    </grouplist>
+  </BootstrapMembership>
+   
+   <GPaxosStream 
+     instantiate="*" name="STM" pgroup="0" agroup="1" lgroup="2"
+     cstruct="net.sourceforge.fractal.consensus.gpaxos.cstruct.CSched"
+     command="net.sourceforge.fractal.consensus.gpaxos.cstruct.SimpleCommutativeCommand"
+     useFastBallot="true"
+     recovery="1"
+     checkpointSize="500"/>
+     />
+
+</FRACTAL>
