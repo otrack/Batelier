@@ -1,4 +1,4 @@
-Batelier
+Fractal
 ========
 
 A group communication middleware
