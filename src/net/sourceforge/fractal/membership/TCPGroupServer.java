@@ -26,7 +26,7 @@ class TCPGroupServer implements Runnable{
 			try{
 				ssc = ServerSocketChannel.open();
 				ssc.configureBlocking(true);
-				if(ConstantPool.TEST_DL==1)
+				if(ConstantPool.DUMMY_NET==1)
 					ssc.socket().bind(new InetSocketAddress(group.membership.myIP(),group.port));
 				else
 					ssc.socket().bind(new InetSocketAddress("0.0.0.0",group.port));

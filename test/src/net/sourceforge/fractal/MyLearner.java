@@ -19,7 +19,7 @@ public class MyLearner<E extends Message> implements Learner{
 		
 	@SuppressWarnings("unchecked")
 	public void learn(Stream s, Serializable m) {
-		if(ConstantPool.TEST_DL>1)
+		if(ConstantPool.DUMMY_NET>1)
 			System.out.println("I receive a "+((UMessage)m).getMessageType() +" message from "+((UMessage)m).source);
 		try {
 			q.put((E) m);

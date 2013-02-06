@@ -57,8 +57,8 @@ public class DummyNetwork {
 	}
 	
 	public static Map<Node,Membership> create(int nnodes, int ngroups){
-		if(ConstantPool.TEST_DL != 1 ){
-			System.err.println("ConstantPool.TEST_DL must equal 1");
+		if(ConstantPool.DUMMY_NET != 1 ){
+			System.err.println("ConstantPool.DUMMY_NET must equal 1");
 			System.exit(-1);
 		}
 		 create(nnodes);
