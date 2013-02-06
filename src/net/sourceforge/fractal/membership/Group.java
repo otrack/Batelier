@@ -12,8 +12,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 
-import com.sleepycat.db.MessageHandler;
-
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.Learner;
 import net.sourceforge.fractal.Message;
@@ -246,7 +244,6 @@ public abstract class Group extends Stream implements Comparable<Group>{
 
 		public MessageHandlerTask() {}
 
-		@Override
 		public void run() {
 			List<ByteBuffer[]> list = new ArrayList<ByteBuffer[]>();
 			while(true){

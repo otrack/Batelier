@@ -150,7 +150,6 @@ public final class MulticastStream extends Stream implements Learner {
 			g.unicast(swid,m);
 		}
 
-		@Override
 		public void learn(Stream stream,Serializable s) {
 			deliver(s);
 		}

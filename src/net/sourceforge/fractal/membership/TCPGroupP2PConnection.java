@@ -200,7 +200,6 @@ public class TCPGroupP2PConnection{
 			mheader = ByteBuffer.allocateDirect(4);
 		}
 
-		@Override
 		public void run() {
 
 			try{

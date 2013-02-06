@@ -27,16 +27,16 @@ import net.sourceforge.fractal.utils.XMLUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import com.sleepycat.db.Cursor;
-import com.sleepycat.db.Database;
-import com.sleepycat.db.DatabaseConfig;
-import com.sleepycat.db.DatabaseEntry;
-import com.sleepycat.db.DatabaseException;
-import com.sleepycat.db.Environment;
-import com.sleepycat.db.EnvironmentConfig;
-import com.sleepycat.db.LockMode;
-import com.sleepycat.db.OperationStatus;
-import com.sleepycat.db.Transaction;
+import com.sleepycat.je.Cursor;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.LockMode;
+import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.Transaction;
 
 /**   
 * @author L. Camargos
@@ -88,7 +88,7 @@ public class PaxosStreamManager {
                     dbConfig.setTransactional(true); 
                     dbConfig.setAllowCreate(true);
                     dbConfig.setSortedDuplicates(false);
-                    logDB = logDBEnv.openDatabase(txn,"paxosLog", "paxosLog",dbConfig);
+                    logDB = logDBEnv.openDatabase(txn,"paxosLog",dbConfig);
                     txn.commitSync();
                     
                 } catch (Exception e) {
