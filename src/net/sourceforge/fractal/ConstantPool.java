@@ -84,13 +84,6 @@ public class ConstantPool {
      * method of FractalManager
      */
     public static boolean PAXOS_STABLE_STORAGE_RECOVERY = false;
-
-    /**
-     * Forget/purge information about old instances? They can still be recovered
-     * by looking at logs ore executing instance again (or should). But that's
-     * going to be expensive.
-     */
-    public static final boolean PAXOS_PURGE_INSTANCES = true; // a must have
     
     /**
      * Purge instances information rom memory when the list gets to this size.

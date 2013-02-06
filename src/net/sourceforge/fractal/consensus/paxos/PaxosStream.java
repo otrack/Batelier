@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.Message;
@@ -24,6 +26,8 @@ import net.sourceforge.fractal.consensus.ConsensusLearner;
 import net.sourceforge.fractal.membership.Membership;
 import net.sourceforge.fractal.utils.CollectionUtils;
 import net.sourceforge.fractal.utils.Pair;
+
+import net.sourceforge.fractal.ConstantPool.*;
 
 /**
  * 
@@ -35,25 +39,10 @@ import net.sourceforge.fractal.utils.Pair;
 public final class PaxosStream implements Consensus, Runnable {
 
 	// Instance management.
-	private Map<Integer, InstanceKeeper> instances = Collections
-			.synchronizedMap(new LinkedHashMap<Integer, InstanceKeeper>(
-					ConstantPool.PAXOS_PURGE_MARK + 1, 0.75f, true) {
-				private static final long serialVersionUID = 1L;
-
-				@SuppressWarnings("unchecked")
-				protected boolean removeEldestEntry(Map.Entry eldest) {
-					if (ConstantPool.PAXOS_PURGE_INSTANCES) {
-						if (ConstantPool.PAXOS_DL > 5
-								&& size() > ConstantPool.PAXOS_PURGE_MARK)
-							debug(" purging size " + size() + " > "
-									+ ConstantPool.PAXOS_PURGE_MARK);
-						return size() > ConstantPool.PAXOS_PURGE_MARK;
-					} else {
-						return false;
-					}
-				}
-			});
-
+	private ConcurrentLinkedHashMap<Integer, InstanceKeeper> instances = 
+			new ConcurrentLinkedHashMap.Builder<Integer,InstanceKeeper>()
+			.maximumWeightedCapacity(ConstantPool.PAXOS_PURGE_MARK)
+			.build();
 	
 	// Instances' shared vars.
 	private Integer sw_id = null; // System wide Id
