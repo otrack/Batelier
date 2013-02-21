@@ -325,8 +325,8 @@ public class Membership {
         	
         	if(ConstantPool.MEMBERSHIP_DL > 0)
         		 System.out.println(this+" assigning a random ID and a global scope address.");
-        	
-        	Random rand = new Random(System.currentTimeMillis());
+        	 
+        	Random rand = new Random(myIPs.iterator().next().hashCode()+System.nanoTime());
         	myId = Math.abs(rand.nextInt());
 			try {
 				// Get global interface
@@ -341,6 +341,7 @@ public class Membership {
 					}		
 			    }
 			} catch (IOException e) {
+				e.printStackTrace();
 				throw new RuntimeException("Unable to determine a global scope IP.");
 			}
 			

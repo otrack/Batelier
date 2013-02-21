@@ -50,7 +50,7 @@ public class WanABCastInterGroupMessage extends MulticastMessage implements Clon
 	}
 		
 	public String toString(){
-		return "<"+round+","+gSource+">";
+		return "<"+round+","+getGSource()+">";
 	}
 
 	public boolean equals(Object o){

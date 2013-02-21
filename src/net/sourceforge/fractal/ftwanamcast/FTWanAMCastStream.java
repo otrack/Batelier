@@ -242,7 +242,7 @@ public class FTWanAMCastStream extends Stream implements Runnable, Learner{
 						synchronized(this){
 							if(!globalMsgs.containsKey(p.round))
 								globalMsgs.put(p.round,new HashMap<String, ArrayList<FTWanAMCastIntraGroupMessage>>());
-							globalMsgs.get(p.round).put(p.gSource,(ArrayList<FTWanAMCastIntraGroupMessage>)p.serializable);
+							globalMsgs.get(p.round).put(p.getGSource(),(ArrayList<FTWanAMCastIntraGroupMessage>)p.serializable);
 							if(p.round==roundToEnd && K > roundToEnd * startRoundFrequency + nbLocalConsensusPerRound)
 								checkEndOfRoundToEnd();
 						}
@@ -299,7 +299,7 @@ public class FTWanAMCastStream extends Stream implements Runnable, Learner{
 
 				if(ConstantPool.FTWanAMCast_DL > 4)
 					System.out.println("FTWanAMCast ( "+ mySWid +" , "+System.currentTimeMillis()+ " ) " +
-							"Ack from "+m.gSource+" for "+m);
+							"Ack from "+m.getGSource()+" for "+m);
 
 				if(K > roundToEnd * startRoundFrequency + nbLocalConsensusPerRound)
 					checkEndOfRoundToEnd();
@@ -316,7 +316,7 @@ public class FTWanAMCastStream extends Stream implements Runnable, Learner{
 						myGroup.name(),
 						mySWid,
 						m.round,
-						new String(m.gSource));
+						new String(m.getGSource()));
 				rmcast.multicast(ack);
 			}
 

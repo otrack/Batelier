@@ -230,7 +230,7 @@ public class WanABCastStream extends Stream implements Runnable, Learner{
 					if(myGroup.isLeading(mySWid)&&rmcastDests.size()>0){
 						WanABCastInterGroupMessage p = new WanABCastInterGroupMessage(bundle, rmcastDests, myGroup.name(), mySWid, round);
 						if(ConstantPool.WANABCAST_DL > 4)
-							System.out.println("WanABCast ( "+ mySWid +" , "+System.currentTimeMillis()+" ) I send "+p+" (instance "+K+") to distant groups "+p.dest);
+							System.out.println("WanABCast ( "+ mySWid +" , "+System.currentTimeMillis()+" ) I send "+p+" (instance "+K+") to distant groups "+p.getDest());
 						rmcast.multicast(p);
 					}
 
@@ -265,7 +265,7 @@ public class WanABCastStream extends Stream implements Runnable, Learner{
 						synchronized(this){
 							if(!globalMsgs.containsKey(p.round))
 								globalMsgs.put(p.round,new HashMap<String, ArrayList<WanABCastIntraGroupMessage>>());
-							globalMsgs.get(p.round).put(p.gSource,(ArrayList<WanABCastIntraGroupMessage>)p.serializable);
+							globalMsgs.get(p.round).put(p.getGSource(),(ArrayList<WanABCastIntraGroupMessage>)p.serializable);
 							if(p.round==roundToEnd && K > roundToEnd * startRoundFrequency + nbLocalConsensusPerRound)
 								checkEndOfRoundToEnd();
 						}

@@ -38,6 +38,7 @@ import org.w3c.dom.Node;
 
 public class FractalManager {
     
+
 	public static final String PAXOS_COMMIT = "paxosCommit";
     public static final String ABCAST_COMMIT = "abcastCommit";
 
@@ -311,4 +312,7 @@ public class FractalManager {
         }
     }
 
+	public Membership getMembership() {
+		return membership;
+	}
 }

@@ -1,5 +1,6 @@
 package net.sourceforge.fractal.membership;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -8,6 +9,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
@@ -40,6 +42,7 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	protected Map<String,Set<BlockingQueue<Message>>> type2QueueSet;
 	protected Map<String, Set<Learner>> learners;
 
+	private Random random=new Random(System.currentTimeMillis());
 	public Group(Membership m, String n, int p) {
 		membership = m;
 		name = n;
@@ -113,6 +116,16 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	protected final void deliver(ByteBuffer[] toRecv, TCPGroupP2PConnection connection)
 	throws InterruptedException{
 		queue.put(toRecv);
+//		for(ByteBuffer bb : toRecv)
+//			try {
+//				deliver(Message.unpack(bb));
+//			} catch (ClassNotFoundException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -204,6 +217,10 @@ public abstract class Group extends Stream implements Comparable<Group>{
 		return swid2ip.keySet().toArray(new Integer[0])[i];
 	}
 
+	public int getRandom() {
+		return swid2ip.keySet().toArray(new Integer[0])[random.nextInt(swid2ip.keySet().size())];
+	}
+	
 	public Set<Integer> members(){
 		return swid2ip.keySet();
 	}
@@ -244,6 +261,7 @@ public abstract class Group extends Stream implements Comparable<Group>{
 
 		public MessageHandlerTask() {}
 
+		@Override
 		public void run() {
 			List<ByteBuffer[]> list = new ArrayList<ByteBuffer[]>();
 			while(true){

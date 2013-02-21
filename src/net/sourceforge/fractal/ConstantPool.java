@@ -35,7 +35,7 @@ public class ConstantPool {
     public static final int ABCAST_DL = 0;      // Atomic broadcast.
     public static final int BROADCAST_DL = 0;      // Reliable broadcast.
     public static final int MULTICAST_DL = 0;      // Reliable multicast.
-    public static final int WANAMCAST_DL = 0;   // WAN Atomic multicast
+    public static final int WANAMCAST_DL = 1;   // WAN Atomic multicast
     public static final int PAXOS_COMMIT_DL = 0;// Paxos Commit
     public static final int WANABCAST_DL = 0;   // WAN Atomic broadcast
     public static final int FTWanAMCast_DL = 0; // Fault-Tolerant Wan Atomic Multicast
@@ -43,7 +43,7 @@ public class ConstantPool {
     public static final int BDB_DL = 0;         // If BDB is used for log keeping.	
     public static final boolean MESSAGE_STREAM_DEBUG = false;	
     public static final int QUEUES_DL = 0;
-    public static final int TEST_DL=1;
+    public static final int TEST_DL=0;
     public static final int DUMMY_NET=0;
    
     /**
@@ -84,6 +84,9 @@ public class ConstantPool {
      * method of FractalManager
      */
     public static boolean PAXOS_STABLE_STORAGE_RECOVERY = false;
+
+	public static final boolean PAXOS_PURGE_INSTANCES = true;
+
     
     /**
      * Purge instances information rom memory when the list gets to this size.

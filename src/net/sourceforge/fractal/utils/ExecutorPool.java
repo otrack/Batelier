@@ -55,6 +55,9 @@ public class ExecutorPool {
 	public static ExecutorPool getInstance() {
 		return instance;
 	}
-
+	
+	public ExecutorService getExecutorService(){
+		return es;
+	}	
 
 }

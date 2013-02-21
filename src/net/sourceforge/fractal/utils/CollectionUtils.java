@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
@@ -21,6 +22,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 public class CollectionUtils {
+	
+	private static Random rand = new Random(System.currentTimeMillis());
 	
     public static <K,V> Map<K,V> newMap() {
         return new HashMap<K,V>();
@@ -124,6 +127,11 @@ public class CollectionUtils {
         return retVal;
     }
     //mw+ end
+    
+    public static <K> K randomElementIn(Collection<K> c){
+    	K[] a = null;
+    	return c.toArray(a)[rand.nextInt(c.size())];
+    }
     
     public static <K> List<K> newList() {
         return new ArrayList<K>();

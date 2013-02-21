@@ -27,17 +27,24 @@ public class MulticastMessage extends UMessage implements Cloneable{
 	
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	
-	public Collection<String> dest;
-	public String gSource;
+	protected Collection<String> dest;
+	protected String gSource;
 	
-	public MulticastMessage(){
-		
-	}
+	@Deprecated
+	public MulticastMessage(){}
 	
 	public MulticastMessage(Serializable s, Collection<String> dest, String gSource, int swidSource){
 		super(s,swidSource);
 		this.gSource = gSource;
 		this.dest = dest;
+	}
+	
+	public String getGSource(){
+		return gSource;
+	}
+	
+	public Collection<String> getDest(){
+		return dest;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -66,7 +73,7 @@ public class MulticastMessage extends UMessage implements Cloneable{
 	}
 	
 	public String toString(){
-		return "<"+swid+','+gSource+','+dest+","+serializable+">";
+		return "<"+getUniqueId()+','+gSource+','+dest+","+serializable+">";
 	}
 	
 }

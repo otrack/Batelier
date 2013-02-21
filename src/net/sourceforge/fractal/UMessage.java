@@ -24,22 +24,29 @@ import net.sourceforge.fractal.utils.Pair;
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 
+/**
+ * This class implements a message that is (system-wide unique) if the field swid is not null.
+ * 
+ * @author P.Sutra
+ *
+ */
 public class UMessage extends Message implements Cloneable, Comparable<UMessage>{
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
-	private static final ConcurrentLinkedHashMap<String,UMessage> cache = 
+	protected static final ConcurrentLinkedHashMap<String,UMessage> cache = 
 			new ConcurrentLinkedHashMap.Builder<String,UMessage>()
 			.maximumWeightedCapacity(5000)
 			.build();
-	private static final String uniqueIdSeparator=":"; // to construct the uniqueness of swid
-	private static final AtomicInteger rbmCounter = new AtomicInteger(0); // logical clock of site
-	private static final Pattern p = Pattern.compile("([^:]*):([^:]*)");
+	protected static final String uniqueIdSeparator=":"; // to construct the uniqueness of swid
+	protected static final AtomicInteger rbmCounter = new AtomicInteger(0); // logical clock of site
+	protected static final Pattern p = Pattern.compile("([^:]*):([^:]*)");
 
 	protected String swid; // a system wide unique id
 	
 	public Serializable serializable; 	
 	
+	@Deprecated
 	public UMessage(){}
 	
 	public UMessage(Serializable s, int idSource){
@@ -112,12 +119,15 @@ public class UMessage extends Message implements Cloneable, Comparable<UMessage>
 		}
 	}
 
-    public Object readResolve() {
-    	if(!cache.containsKey(swid)){
-    		cache.put(swid,this);
-    	}
-        return cache.get(swid);
-    }
+//    public Object readResolve() {
+//    	if(swid!=null){ // in case the swid is not set.
+//    		if(!cache.containsKey(swid)){
+//    			cache.put(swid,this);
+//    		}
+//    		return cache.get(swid);
+//    	}
+//    	return this;
+//    }
 
 	
 	public String toString(){

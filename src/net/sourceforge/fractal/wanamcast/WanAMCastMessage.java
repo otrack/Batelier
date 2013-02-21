@@ -63,7 +63,7 @@ public class WanAMCastMessage extends UMessage implements Cloneable {
 	}
 		
 	public String toString(){
-		return "<<"+swid+","+clock+","+gDest+","+gSource+">>";
+		return "<<"+getUniqueId()+","+clock+","+gDest+","+gSource+">>";
 	}
 	
 }

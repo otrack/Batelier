@@ -44,7 +44,7 @@ public class FTWanAMCastInterGroupMessage extends MulticastMessage implements Cl
 	}
 		
 	public String toString(){
-		return "<"+round+","+gSource+">";
+		return "<"+round+","+getGSource()+">";
 	}
 
 	public boolean equals(Object o){

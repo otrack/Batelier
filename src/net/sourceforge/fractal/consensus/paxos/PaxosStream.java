@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.Message;
@@ -26,8 +24,6 @@ import net.sourceforge.fractal.consensus.ConsensusLearner;
 import net.sourceforge.fractal.membership.Membership;
 import net.sourceforge.fractal.utils.CollectionUtils;
 import net.sourceforge.fractal.utils.Pair;
-
-import net.sourceforge.fractal.ConstantPool.*;
 
 /**
  * 
@@ -39,10 +35,25 @@ import net.sourceforge.fractal.ConstantPool.*;
 public final class PaxosStream implements Consensus, Runnable {
 
 	// Instance management.
-	private ConcurrentLinkedHashMap<Integer, InstanceKeeper> instances = 
-			new ConcurrentLinkedHashMap.Builder<Integer,InstanceKeeper>()
-			.maximumWeightedCapacity(ConstantPool.PAXOS_PURGE_MARK)
-			.build();
+	private Map<Integer, InstanceKeeper> instances = Collections
+			.synchronizedMap(new LinkedHashMap<Integer, InstanceKeeper>(
+					ConstantPool.PAXOS_PURGE_MARK + 1, 0.75f, true) {
+				private static final long serialVersionUID = 1L;
+
+				@SuppressWarnings("unchecked")
+				protected boolean removeEldestEntry(Map.Entry eldest) {
+					if (ConstantPool.PAXOS_PURGE_INSTANCES) {
+						if (ConstantPool.PAXOS_DL > 5
+								&& size() > ConstantPool.PAXOS_PURGE_MARK)
+							debug(" purging size " + size() + " > "
+									+ ConstantPool.PAXOS_PURGE_MARK);
+						return size() > ConstantPool.PAXOS_PURGE_MARK;
+					} else {
+						return false;
+					}
+				}
+			});
+
 	
 	// Instances' shared vars.
 	private Integer sw_id = null; // System wide Id
@@ -205,10 +216,11 @@ public final class PaxosStream implements Consensus, Runnable {
 	synchronized private InstanceKeeper getInstance(Integer inst, boolean lock) {
 		InstanceKeeper ik;
 		ik = instances.get(inst);
-		if (null == ik) 
+		if (null == ik) {
 			ik = new InstanceKeeper(inst, n_acc, acc_id, n_prp, prp_id,
 					n_lrn, lrn_id, sw_id);
-		instances.put(inst, ik);
+			instances.put(inst, ik);
+		}
 
 		if (lock)
 			ik.lock();

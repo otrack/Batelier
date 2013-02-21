@@ -10,13 +10,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.Learner;
-import net.sourceforge.fractal.Message;
 import net.sourceforge.fractal.Stream;
 import net.sourceforge.fractal.consensus.paxos.PaxosStream;
 import net.sourceforge.fractal.membership.Group;
@@ -26,14 +26,11 @@ import net.sourceforge.fractal.utils.CollectionUtils;
 import net.sourceforge.fractal.utils.PerformanceProbe.TimeRecorder;
 import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-
 /**   
 * @author P. Sutra
 * 
 */
 
-// FIXME clone() issue 
 public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private static ValueRecorder aDeliveredSize;
@@ -42,6 +39,8 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private static ValueRecorder averageLatency;
 	private static Map<WanAMCastMessage,Long> averageLatencyTracker;
 	private static TimeRecorder averageConsensusLatency;
+	private static ValueRecorder checksum = new ValueRecorder("WanAMCast#checksum");
+	private static int deliveredCnt = 0;
 	static{
 		if(ConstantPool.WANAMCAST_DL>0){
 			aDeliveredSize = new ValueRecorder("WanAMCast#aDeliveredSize");
@@ -54,6 +53,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			averageLatency.setFormat("%a");
 			averageLatencyTracker = new HashMap<WanAMCastMessage, Long>();
 			averageConsensusLatency = new TimeRecorder("WanAMCast#averageConsensusLatency");
+			checksum.setFormat("%t");
 		}
 	}
 	
@@ -72,7 +72,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private BlockingQueue<WanAMCastMessage> intraGroupChannel;
 	private HashSet<WanAMCastMessage> consensusDelivered;
-	private ConcurrentLinkedHashMap<String,Integer> aDelivered; // Does not contain msg with gDest={myGroup.name()}
+	private Map<String,Integer> aDelivered; // Does not contain msg with gDest={myGroup.name()}
 	
 	Thread mainThread;
 	
@@ -97,7 +97,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		this.myGroup = g;
 		this.myName = streamName;
 		this.terminate = false;
-		this.localmsgs_opt = localmsgs_opt;
+		this.localmsgs_opt = false;
 
 		this.multicastStream = multicast;
 		this.paxosStream = paxos;
@@ -107,9 +107,15 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		
 		// FIXME We can't garbage according to a FIFO criterion, cause
 		// this primitive does not ensure causal ordering.
-		aDelivered = new ConcurrentLinkedHashMap.Builder<String,Integer>()
-				.maximumWeightedCapacity(5000)
-				.build();
+		aDelivered = new LinkedHashMap<String, Integer>(5000,0.75f,true){
+			private static final long serialVersionUID = 1L;
+			private static final int MAX_ENTRIES = 5000;
+
+			@SuppressWarnings("unchecked")
+			protected boolean removeEldestEntry(Map.Entry eldest) {
+				return size() > MAX_ENTRIES;
+			}
+		};
 
 		this.stages = new HashMap<WanAMCastMessage, Integer>();
 		this.stage1 = new HashMap<WanAMCastMessage, HashMap<String,Integer>>();
@@ -154,7 +160,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							p.add(intraGroupChannel.take());
 							if(ConstantPool.WANAMCAST_DL>0 ) averageConsensusLatency.start();
 							synchronized(this){
-								while( (msg=intraGroupChannel.poll()) != null && p.size() <= 20){
+								while( (msg=intraGroupChannel.poll()) != null){
 									if( !aDelivered.containsKey(msg.getUniqueId())
 											&&
 											( ! consensusDelivered.contains(msg.getUniqueId()) || stages.get(msg) == 2 ))
@@ -356,14 +362,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					continue;
 				}
 				
-				if( m.gDest.size()==1 ){
-					try {
-						intraGroupChannel.put(m);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}	
-				}else {
-
 					/* due to asynchronism m can be: 
 					 *  - in stage 0,
 					 *  - in stage 1 if the first consensus happened,
@@ -389,7 +387,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							updateTimestamp(m);
 						needToDeliver |= testEndGathering(m);
 					}
-				}
 			}
 
 			if (needToDeliver && !localmsgs_opt)
@@ -407,14 +404,17 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		return super.registerLearner(msgType, learner);
 	}
 	
-	
 	@Override
 	public void deliver(Serializable s) {
-		Message m = (Message) s;
+		WanAMCastMessage m = (WanAMCastMessage) s;
 		if( learners.get(m.getMessageType())!=null
 			&&
 			learners.get(m.getMessageType()).size()>0){
 			for(Learner l : learners.get(m.getMessageType())){
+				if(ConstantPool.WANAMCAST_DL > 0){
+					deliveredCnt++;
+					checksum.add(m.getUniqueId().hashCode()%deliveredCnt);
+				}
 				if(ConstantPool.WANAMCAST_DL > 4)
 					System.out.println(this+" I deliver "+m);
 				l.learn(this,(m));
@@ -424,7 +424,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				System.out.println(this+" got a "+ m.getMessageType() +" to nobody");
 		}
 	}
-
+	
 	private void testDeliver(){
 		WanAMCastMessage m;
 		
@@ -456,18 +456,20 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
 						
 						deliver(m);
-						aDelivered.put(ts2msg.get(ts).getUniqueId(),null);
+						aDelivered.put(m.getUniqueId(),null);
 						if(ConstantPool.WANAMCAST_DL > 0 && averageLatencyTracker.containsKey(m)){
 							averageLatency.add( System.currentTimeMillis() - averageLatencyTracker.get(m) );
 						}
 						if(ConstantPool.WANAMCAST_DL>0) aDeliveredSize.add(aDelivered.size());
-						toRemove.add(ts2msg.get(ts));
+						toRemove.add(m);
 					}
 				}
 				
 				for(WanAMCastMessage old : toRemove){
+					intraGroupChannel.remove(old);
 					consensusDelivered.remove(old);
 					stages.remove(old);
+					stage1.remove(old);
 					Timestamp oldTs = msg2ts.get(old);
 					ts2msg.remove(oldTs);
 					msg2ts.remove(old);
@@ -485,15 +487,16 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					if(ConstantPool.WANAMCAST_DL > 0 && averageLatencyTracker.containsKey(m)){
 						averageLatency.add(System.currentTimeMillis()-averageLatencyTracker.get(m));
 					}
-					aDelivered.put(ts2msg.get(ts).getUniqueId(),0);
+					aDelivered.put(m.getUniqueId(),0);
 					if(ConstantPool.WANAMCAST_DL>0) aDeliveredSize.add(aDelivered.size());
-					toRemove.add(ts2msg.get(ts));				
+					toRemove.add(m);				
 				}else{
 					break;
 				}
 			}
 
 			for(WanAMCastMessage old : toRemove){
+				intraGroupChannel.remove(old);
 				consensusDelivered.remove(old);
 				stages.remove(old);
 				stage1.remove(old); 
@@ -501,6 +504,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				ts2msg.remove(oldTs);
 				msg2ts.remove(old);
 			}
+			toRemove.clear();
 		}
 	}
 
