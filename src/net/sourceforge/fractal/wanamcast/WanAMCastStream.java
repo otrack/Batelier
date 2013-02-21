@@ -538,7 +538,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 			assert stage1.get(msg).containsKey(myGroup.name()) : myGroup.name() + " with " +stage1.get(msg);
 			// if localmsgs_opt is true global msgs always go through 2 consensus
-			if(((stages.get(msg)==1) && localmsgs_opt) ||
+			if(((stages.get(msg)==1) && (localmsgs_opt  && msg.gDest.size()==1)) ||
 			   ((maxGroupClock > stage1.get(msg).get(myGroup.name())) && !localmsgs_opt) ) {
 				WanAMCastMessage m = (WanAMCastMessage)msg.clone();
 				m.clock = maxGroupClock;
