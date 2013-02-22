@@ -27,8 +27,8 @@ public class MulticastMessage extends UMessage implements Cloneable{
 	
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	
-	protected Collection<String> dest;
-	protected String gSource;
+	public Collection<String> dest;
+	public String gSource;
 	
 	@Deprecated
 	public MulticastMessage(){}

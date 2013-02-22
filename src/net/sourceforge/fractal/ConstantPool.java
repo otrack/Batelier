@@ -19,7 +19,7 @@ public class ConstantPool {
 	
 	public static final int PROTOCOL_MAGIC = 0xCA552DFA;
 	
-    public static final int MEMBERSHIP_DL=3;  //membership service.
+    public static final int MEMBERSHIP_DL=0;  //membership service.
     public static final int PAXOS_RECOVERY_DL = 0;
     
     /**
@@ -91,7 +91,7 @@ public class ConstantPool {
     /**
      * Purge instances information rom memory when the list gets to this size.
      */
-    public static final int PAXOS_PURGE_MARK = 1000; // This parameter has a huge influence on memory consumption, tweak wisely.
+    public static final int PAXOS_PURGE_MARK = 100; // This parameter has a huge influence on memory consumption, tweak wisely.
     
     /**
      * Debug information on recovery
