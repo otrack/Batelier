@@ -194,9 +194,10 @@ public class Membership {
 		Collection<Group> ret = new HashSet<Group>();
 		List<Integer> peers = new ArrayList<Integer>(swid2ip.keySet()); 
 		Group g = null;
+		int j=0;
 		for(int i=0; i<peers.size(); i++){
 			if(i%size==0){
-				g = getOrCreateTCPGroup(prefix+String.valueOf(i),port);
+				g = getOrCreateTCPGroup(prefix+String.valueOf(j++),port);
 				ret.add(g);
 			}
 			int p = peers.get(i);
