@@ -41,7 +41,7 @@ public class AMCastTest {
 			Group g = network.get(n).groupsOf(n.id).iterator().next();
 			MulticastStream multicast = new MulticastStream("rmcast"+n.id,g,network.get(n));
 			PaxosStream paxos = new PaxosStream("paxos",n.id,"LEADER_CONSTANT",g.name(),g.name(),g.name(),network.get(n));
-			WanAMCastStream amstream = new WanAMCastStream(n.id, g, "amcast"+n.id, multicast,paxos, false);
+			WanAMCastStream amstream = new WanAMCastStream(n.id, g, "amcast"+n.id, multicast,paxos);
 			streams.put(n,amstream);
 			MyLearner<WanAMCastMessage> l = new MyLearner<WanAMCastMessage>(new LinkedBlockingQueue<WanAMCastMessage>());
 			learners.put(n.id, l);

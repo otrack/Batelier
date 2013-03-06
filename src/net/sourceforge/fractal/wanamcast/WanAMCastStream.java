@@ -349,7 +349,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				assert(m.dest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.dest;
 				assert(!m.gSource.equals(myGroup.name()) || myGroup.contains(m.source)) : m+" "+m.source;
 				
-				if( aDelivered.containsKey(m.getUniqueId())) {
+				if( aDelivered.containsKey(m.getUniqueId()) ) {
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I kick "+m);
 					continue;
