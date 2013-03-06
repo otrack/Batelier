@@ -44,7 +44,7 @@ public class ConstantPool {
     public static final boolean MESSAGE_STREAM_DEBUG = false;	
     public static final int QUEUES_DL = 0;
     public static final int TEST_DL=0;
-    public static final int DUMMY_NET=0;
+    public static final int DUMMY_NET=1;
    
     /**
      * Reliable Broadcast stuff

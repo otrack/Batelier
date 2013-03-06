@@ -448,6 +448,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				
 
 			if (localmsgs_opt) { //A-Deliver local msgs directly at this point
+				
 				for(Timestamp ts : ts2msg.keySet()){
 					m = ts2msg.get(ts);
 					assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
