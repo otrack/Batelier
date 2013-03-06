@@ -354,22 +354,23 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						System.out.println(this+" I kick "+m);
 					continue;
 				}
-				
-				if( !stages.keySet().contains(m)){ // m could be in late
+													
+				if( !stages.keySet().contains(m)){
 					stages.put(m,0);
 					try {
 						intraGroupChannel.put(m);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
-					}	
+					}						
 				}
-
-				if(!stage1.containsKey(m)) 
-					stage1.put(m, new HashMap<String,Integer>());
 				
-				if(m.dest.contains(m.gSource))
+				if( m.dest.contains(m.gSource) ){
+					if(!stage1.containsKey(m)) 
+						stage1.put(m, new HashMap<String,Integer>());
 					stage1.get(m).put(m.gSource, m.clock);
-				
+					testEndGathering(m);
+				}
+					
 			}
 
 		}
