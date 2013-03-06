@@ -364,12 +364,10 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					}	
 				}
 
-				if( !m.gSource.equals(myGroup.name()) ){
-					if(!stage1.containsKey(m)) 
-						stage1.put(m, new HashMap<String,Integer>());
-					if(m.dest.contains(m.gSource))
-						stage1.get(m).put(m.gSource, m.clock);
-				}
+				if(!stage1.containsKey(m)) 
+					stage1.put(m, new HashMap<String,Integer>());
+				if(m.dest.contains(m.gSource))
+					stage1.get(m).put(m.gSource, m.clock);
 				
 			}
 
