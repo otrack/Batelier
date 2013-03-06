@@ -25,8 +25,8 @@ public class WanAMCastMessage extends MulticastMessage implements Cloneable {
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	public Integer clock;
 	
-	public WanAMCastMessage(){
-		
+	@Deprecated
+	public WanAMCastMessage(){	
 	}
 	
 	public WanAMCastMessage(Serializable s, Collection<String> dest, String gSource, int swidSource){
