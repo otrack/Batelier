@@ -513,6 +513,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			System.out.println(this+" Updating ts of "+m);
 		}
 		assert msg2ts.size()==ts2msg.size();
+		System.out.println("TS SIZE = "+ts2msg.size());
 		if(!msg2ts.containsKey(m)){
 			Timestamp ts = new Timestamp(m.uidToObject(),m.clock);
 			msg2ts.put(m,ts);
