@@ -451,10 +451,10 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				for(Timestamp ts : ts2msg.keySet()){
 					m = ts2msg.get(ts);
 					assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
+					assert !aDelivered.containsKey(m.getUniqueId());
 					if((stages.get(m)==3) && (m.gDest.size()==1) ){
 						if(ConstantPool.WANAMCAST_DL > 3)
 							System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
-						
 						deliver(m);
 						aDelivered.put(m.getUniqueId(),null);
 						if(ConstantPool.WANAMCAST_DL > 0 && averageLatencyTracker.containsKey(m)){
@@ -475,7 +475,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					msg2ts.remove(old);
 				}
 				toRemove.clear();
-			}	
+			}
 						
 			for(Timestamp ts : ts2msg.keySet()){
 				m = ts2msg.get(ts);
@@ -512,6 +512,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		if(ConstantPool.WANAMCAST_DL > 6){
 			System.out.println(this+" Updating ts of "+m);
 		}
+		assert msg2ts.size()==ts2msg.size();
 		if(!msg2ts.containsKey(m)){
 			Timestamp ts = new Timestamp(m.uidToObject(),m.clock);
 			msg2ts.put(m,ts);

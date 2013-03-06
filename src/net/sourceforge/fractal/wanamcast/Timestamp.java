@@ -44,6 +44,11 @@ public class Timestamp implements Comparable {
 		}
 	}
 	
+	@Override
+	public int hashCode(){
+		return  site+lclock+gclock;
+	}
+	
 	public boolean equals(Object o) {
 		if(o== null || !(o instanceof Timestamp) )
 			throw new ClassCastException();
