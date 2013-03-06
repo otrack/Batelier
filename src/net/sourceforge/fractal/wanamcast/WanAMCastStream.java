@@ -337,7 +337,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	public void learn(Stream s, Serializable value) {
 		MulticastMessage n = (MulticastMessage)value;
 		ArrayList<WanAMCastMessage> msgs = (ArrayList<WanAMCastMessage>)n.serializable;
-		boolean needToDeliver=false;
 		
 		if(ConstantPool.WANAMCAST_DL > 3){
 			System.out.println(this+" I RM-deliver "+ msgs );	
@@ -350,40 +349,29 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				assert(m.dest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.dest;
 				assert(!m.gSource.equals(myGroup.name()) || myGroup.contains(m.source)) : m+" "+m.source;
 				
-
 				if( aDelivered.containsKey(m.getUniqueId())) {
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I kick "+m);
 					continue;
 				}
 				
-					/* due to asynchronism m can be: 
-					 *  - in stage 0,
-					 *  - in stage 1 if the first consensus happened,
-					 *  - in stage 2 if someone collected all clocks,
-					 *  but not in stage 3, nor in aDelivered.
-					 */
+				if( !stages.keySet().contains(m)){ // m could be in late
+					stages.put(m,0);
+					try {
+						intraGroupChannel.put(m);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}	
+				}
 
-					if( !stages.keySet().contains(m)){ // m could be in late
-						stages.put(m,0);
-						try {
-							intraGroupChannel.put(m);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}	
-					}
-
-					if( !m.gSource.equals(myGroup.name()) ){
-						if(!stage1.containsKey(m)) 
-							stage1.put(m, new HashMap<String,Integer>());
-						if(m.dest.contains(m.gSource))
-								stage1.get(m).put(m.gSource, m.clock);
-						needToDeliver |= testEndGathering(m);
-					}
+				if( !m.gSource.equals(myGroup.name()) ){
+					if(!stage1.containsKey(m)) 
+						stage1.put(m, new HashMap<String,Integer>());
+					if(m.dest.contains(m.gSource))
+						stage1.get(m).put(m.gSource, m.clock);
+				}
+				
 			}
-
-			if (needToDeliver)
-				testDeliver();
 
 		}
 		
