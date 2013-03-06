@@ -18,22 +18,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import net.sourceforge.fractal.Messageable;
-import net.sourceforge.fractal.UMessage;
+import net.sourceforge.fractal.multicast.MulticastMessage;
 
-public class WanAMCastMessage extends UMessage implements Cloneable {
+public class WanAMCastMessage extends MulticastMessage implements Cloneable {
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
-	public Collection<String> gDest;
 	public Integer clock;
-	public String gSource;
 	
 	public WanAMCastMessage(){
 		
 	}
 	
-	public WanAMCastMessage(Serializable s, Collection<String> gDest, String gSource, int swidSource){
-		super(s,swidSource);
-		this.gDest = gDest;
+	public WanAMCastMessage(Serializable s, Collection<String> dest, String gSource, int swidSource){
+		super(s,dest, gSource, swidSource);
+		this.dest=dest;
 		this.clock = 0;
 		this.gSource = gSource;
 	}
@@ -42,14 +40,14 @@ public class WanAMCastMessage extends UMessage implements Cloneable {
 	public Object clone(){
 		WanAMCastMessage m = (WanAMCastMessage)super.clone();
 		m.clock = this.clock;
-		m.gDest = new ArrayList<String>(this.gDest);
+		m.dest = new ArrayList<String>(this.dest);
 		m.gSource = this.gSource;
 		return m;
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {
 		 super.writeExternal(out);
-		 out.writeObject(gDest);
+		 out.writeObject(dest);
 		 out.writeObject(clock);
 		 out.writeObject(gSource);
 	}
@@ -57,13 +55,13 @@ public class WanAMCastMessage extends UMessage implements Cloneable {
 	@SuppressWarnings("unchecked")
 	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
-		gDest = (Collection<String>)in.readObject();
+		dest = (Collection<String>)in.readObject();
 		clock = (Integer)in.readObject();
 		gSource = (String)in.readObject();
 	}
 		
 	public String toString(){
-		return "<<"+getUniqueId()+","+clock+","+gDest+","+gSource+">>";
+		return "<<"+getUniqueId()+","+clock+","+dest+","+gSource+">>";
 	}
 	
 }

@@ -72,7 +72,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private BlockingQueue<WanAMCastMessage> intraGroupChannel;
 	private HashSet<WanAMCastMessage> consensusDelivered;
-	private Map<String,Integer> aDelivered; // Does not contain msg with gDest={myGroup.name()}
+	private Map<String,Integer> aDelivered; // Does not contain msg with dest={myGroup.name()}
 	
 	Thread mainThread;
 	
@@ -206,7 +206,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							continue;
 						}
 						
-						if(m.gDest.size()==1){ 
+						if(m.dest.size()==1){ 
 
 							stages.put(m, 3);
 							m.clock = K;
@@ -226,7 +226,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 								m.clock=K;
 								
 								if(myGroup.isLeading(mySWid)){
-									for(String g: m.gDest){
+									for(String g: m.dest){
 										if(!g.equals(myGroup.name())){
 											if( !toSend.keySet().contains(g)){
 												toSend.put(g,new ArrayList<WanAMCastMessage>());
@@ -297,11 +297,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		if(ConstantPool.WANAMCAST_DL > 3)
 			System.out.println(this+" I Wan Atomic Multicast "+m);
 		
-		if( !m.gDest.contains(myGroup.name()) ){
+		if( !m.dest.contains(myGroup.name()) ){
 			multicastStream.multicast(
 					new WanAMCastInterGroupMessage(
 						msgBox,
-						m.gDest,
+						m.dest,
 						myGroup.name(),
 						mySWid)
 					);
@@ -352,7 +352,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 			for(WanAMCastMessage m : msgs){
 
-				assert(m.gDest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.gDest;
+				assert(m.dest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.dest;
 				assert(!m.gSource.equals(myGroup.name()) || myGroup.contains(m.source)) : m+" "+m.source;
 				
 
@@ -381,7 +381,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					if( !m.gSource.equals(myGroup.name()) ){
 						if(!stage1.containsKey(m)) 
 							stage1.put(m, new HashMap<String,Integer>());
-						if(m.gDest.contains(m.gSource))
+						if(m.dest.contains(m.gSource))
 								stage1.get(m).put(m.gSource, m.clock);
 						if (!localmsgs_opt)
 							updateTimestamp(m);
@@ -452,8 +452,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				for(Timestamp ts : ts2msg.keySet()){
 					m = ts2msg.get(ts);
 					assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
-					assert !aDelivered.containsKey(m.getUniqueId());
-					if((stages.get(m)==3) && (m.gDest.size()==1) ){
+					if((stages.get(m)==3) && (m.dest.size()==1) ){
 						if(ConstantPool.WANAMCAST_DL > 3)
 							System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
 						deliver(m);
@@ -531,7 +530,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private boolean testEndGathering(WanAMCastMessage msg){
 		Integer maxGroupClock = 0;
-		if(stage1.get(msg).keySet().size()==msg.gDest.size()){
+		if(stage1.get(msg).keySet().size()==msg.dest.size()){
 			for(String g : stage1.get(msg).keySet()){
 				if(stage1.get(msg).get(g) > maxGroupClock){
 					maxGroupClock = stage1.get(msg).get(g);
@@ -539,8 +538,8 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			}
 
 			assert stage1.get(msg).containsKey(myGroup.name()) : myGroup.name() + " with " +stage1.get(msg);
-			// if localmsgs_opt is true global msgs always go through two consensus
-			if(((stages.get(msg)==1) && (localmsgs_opt  && msg.gDest.size()==1)) ||
+			// if localmsgs_opt is true global msgs always go through 2 consensus
+			if(((stages.get(msg)==1) && (localmsgs_opt  && msg.dest.size()==1)) ||
 			   ((maxGroupClock > stage1.get(msg).get(myGroup.name())) && !localmsgs_opt) ) {
 				WanAMCastMessage m = (WanAMCastMessage)msg.clone();
 				m.clock = maxGroupClock;
