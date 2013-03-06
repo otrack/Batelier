@@ -62,8 +62,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private String myName;
 	int mySWid;
 	private Group myGroup;
-	private boolean localmsgs_opt;
-
 	private boolean terminate;
 	
 	private MulticastStream multicastStream;
@@ -88,7 +86,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private HashSet<WanAMCastMessage> toRemove;
 	private HashSet<String> toMyGroup;
 
-	public WanAMCastStream(int id, Group g, String streamName, MulticastStream multicast, PaxosStream paxos, boolean localmsgs_opt){
+	public WanAMCastStream(int id, Group g, String streamName, MulticastStream multicast, PaxosStream paxos){
 
 		super();
 		this.mySWid = id;
@@ -97,8 +95,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		this.myGroup = g;
 		this.myName = streamName;
 		this.terminate = false;
-		this.localmsgs_opt = false;
-
 		this.multicastStream = multicast;
 		this.paxosStream = paxos;
 
@@ -207,7 +203,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						}
 						
 						if(m.dest.size()==1){ 
-
 							stages.put(m, 3);
 							m.clock = K;
 							updateTimestamp(m);
@@ -383,13 +378,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							stage1.put(m, new HashMap<String,Integer>());
 						if(m.dest.contains(m.gSource))
 								stage1.get(m).put(m.gSource, m.clock);
-						if (!localmsgs_opt)
-							updateTimestamp(m);
 						needToDeliver |= testEndGathering(m);
 					}
 			}
 
-			if (needToDeliver && !localmsgs_opt)
+			if (needToDeliver)
 				testDeliver();
 
 		}
@@ -445,37 +438,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 			if(ConstantPool.WANAMCAST_DL > 3)
 				System.out.println(this+" Smallest ts ="+ts2msg.keySet().iterator().next());
-				
-
-			if (localmsgs_opt) { //A-Deliver local msgs directly at this point
-				
-				for(Timestamp ts : ts2msg.keySet()){
-					m = ts2msg.get(ts);
-					assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
-					if((stages.get(m)==3) && (m.dest.size()==1) ){
-						if(ConstantPool.WANAMCAST_DL > 3)
-							System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
-						deliver(m);
-						aDelivered.put(m.getUniqueId(),null);
-						if(ConstantPool.WANAMCAST_DL > 0 && averageLatencyTracker.containsKey(m)){
-							averageLatency.add( System.currentTimeMillis() - averageLatencyTracker.get(m) );
-						}
-						if(ConstantPool.WANAMCAST_DL>0) aDeliveredSize.add(aDelivered.size());
-						toRemove.add(m);
-					}
-				}
-				
-				for(WanAMCastMessage old : toRemove){
-					intraGroupChannel.remove(old);
-					consensusDelivered.remove(old);
-					stages.remove(old);
-					stage1.remove(old);
-					Timestamp oldTs = msg2ts.get(old);
-					ts2msg.remove(oldTs);
-					msg2ts.remove(old);
-				}
-				toRemove.clear();
-			}
 						
 			for(Timestamp ts : ts2msg.keySet()){
 				m = ts2msg.get(ts);
@@ -484,10 +446,10 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
 					deliver(m);
+					aDelivered.put(m.getUniqueId(),null);
 					if(ConstantPool.WANAMCAST_DL > 0 && averageLatencyTracker.containsKey(m)){
 						averageLatency.add(System.currentTimeMillis()-averageLatencyTracker.get(m));
 					}
-					aDelivered.put(m.getUniqueId(),0);
 					if(ConstantPool.WANAMCAST_DL>0) aDeliveredSize.add(aDelivered.size());
 					toRemove.add(m);				
 				}else{
@@ -540,8 +502,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 			assert stage1.get(msg).containsKey(myGroup.name()) : myGroup.name() + " with " +stage1.get(msg);
 			// if localmsgs_opt is true global msgs always go through 2 consensus
-			if(((stages.get(msg)==1) && (localmsgs_opt  && msg.dest.size()==1)) ||
-			   ((maxGroupClock > stage1.get(msg).get(myGroup.name())) && !localmsgs_opt) ) {
+			if( stages.get(msg)==1 && maxGroupClock > stage1.get(msg).get(myGroup.name())) {
 				WanAMCastMessage m = (WanAMCastMessage)msg.clone();
 				m.clock = maxGroupClock;
 				if(ConstantPool.WANAMCAST_DL > 3)

@@ -41,20 +41,17 @@ public class WanAMCastStreamManager {
 
 		if(FractalUtils.inRange(range,FractalManager.getInstance().membership.myId())){
 			String streamName,consensusName, rmcastName, groupName;
-			boolean localmsgs_opt;
 
 			streamName = XMLUtils.getAttribByName((Element) config, "name");		
 			consensusName = String.valueOf(XMLUtils.getAttribByName((Element) config, "consensusName"));
 			rmcastName = String.valueOf(XMLUtils.getAttribByName((Element) config, "rmcastName"));
 			groupName = String.valueOf(XMLUtils.getAttribByName((Element) config, "group"));
-			localmsgs_opt = Boolean.valueOf(XMLUtils.getAttribByName((Element) config, "localmsgs_opt"));
 			streams.put(streamName, new WanAMCastStream(
 					FractalManager.getInstance().membership.myId(),
 					FractalManager.getInstance().membership.group(groupName),
 					streamName,
 					FractalManager.getInstance().multicast.stream(rmcastName),
-					FractalManager.getInstance().paxos.stream(consensusName), 
-					localmsgs_opt));
+					FractalManager.getInstance().paxos.stream(consensusName)));
 			if(ConstantPool.MULTICAST_DL > 0) System.out.println("Started AMCast stream " + streamName + " on id " + FractalManager.getInstance().membership.myId());
 		}
 	}
@@ -64,8 +61,7 @@ public class WanAMCastStreamManager {
 			String groupName, 
 			String rmcastName,
 			String rbcastName,
-			String consensusName, 
-			boolean localmsgs_opt){
+			String consensusName){
 
 		if(streams.get(streamName)!=null){
 			return streams.get(streamName);
@@ -76,8 +72,7 @@ public class WanAMCastStreamManager {
 				FractalManager.getInstance().membership.group(groupName),
 				streamName,
 				FractalManager.getInstance().multicast.stream(rmcastName),
-				FractalManager.getInstance().paxos.stream(consensusName), 
-				localmsgs_opt);
+				FractalManager.getInstance().paxos.stream(consensusName));
 		streams.put(streamName,stream);
 		return stream;
 	}

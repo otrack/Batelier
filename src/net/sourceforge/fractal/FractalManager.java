@@ -162,7 +162,7 @@ public class FractalManager {
     public WanAMCastStream getOrCreateWanAMCastStream(String streamName, String groupName) {
     	getOrCreatePaxosStream(streamName, groupName);
     	getOrCreateMulticastStream(streamName, groupName);
-    	return wanamcast.getOrCreateWanAMCastStream(streamName,groupName,streamName,streamName,streamName,true);
+    	return wanamcast.getOrCreateWanAMCastStream(streamName,groupName,streamName,streamName,streamName);
     }
     
     public WanABCastStream getOrCreateWanABCastStream(String streamName, Collection<String> allGroupsNames, String groupName, 
