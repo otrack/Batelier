@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 
-import javax.management.RuntimeErrorException;
-
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.Learner;
 import net.sourceforge.fractal.Stream;
@@ -39,7 +37,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private ValueRecorder consensusDeliveredSize;
 	private ValueRecorder stagesSize;
 	private TimeRecorder averageConsensusLatency;
-	private Map<String,TimeRecorder> convoyEffectTracker;
+	private Map<String,Long> convoyEffectTracker;
 	private ValueRecorder convoyEffect;
 	private ValueRecorder checksum;
 
@@ -122,10 +120,12 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			stagesSize = new ValueRecorder(this+"#stagesSize");
 			stagesSize.setFormat("%M");
 			averageConsensusLatency = new TimeRecorder(this+"#averageConsensusLatency");
+			averageConsensusLatency.setFormat("%a");
 			checksum = new ValueRecorder(this+"#checksum");
 			checksum.setFormat("%t");
-			convoyEffectTracker = new HashMap<String, TimeRecorder>();
+			convoyEffectTracker = new HashMap<String, Long>();
 			convoyEffect = new ValueRecorder(this+"#convoyEffect");
+			convoyEffect.setFormat("%a");
 		}
 
 		
@@ -324,7 +324,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					);
 		}
 	}
-	
 
 	@Deprecated
 	public void atomicMulticast(Serializable s, HashSet<String> dest){
@@ -441,10 +440,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			if(ConstantPool.WANAMCAST_DL > 3)
 				System.out.println(this+" Smallest ts ="+ts2msg.keySet().iterator().next());
 						
+			boolean stopDelivey=false;
 			for(Timestamp ts : ts2msg.keySet()){
 				m = ts2msg.get(ts);
 				assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
-				if(stages.get(m)==3 ){
+				if( !stopDelivey && stages.get(m)==3 ){
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
 					deliver(m);
@@ -453,7 +453,16 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						aDeliveredSize.add(aDelivered.size());
 					toRemove.add(m);				
 				}else{
-					break;
+					if(!stopDelivey){
+						stopDelivey=true;
+					}else{
+						if( ConstantPool.WANAMCAST_DL>0 && stages.get(m)==3 ){
+							if(!convoyEffectTracker.containsKey(m.getUniqueId()))
+								convoyEffectTracker.put(m.getUniqueId(),System.currentTimeMillis());
+						}else{
+							break;
+						}
+					}
 				}
 			}
 
@@ -465,6 +474,12 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				Timestamp oldTs = msg2ts.get(old);
 				ts2msg.remove(oldTs);
 				msg2ts.remove(old);
+				if(ConstantPool.WANAMCAST_DL>0){
+					if(convoyEffectTracker.containsKey(old.getUniqueId())){
+						convoyEffect.add(System.currentTimeMillis()-convoyEffectTracker.get(old.getUniqueId()));
+						convoyEffectTracker.remove(old.getUniqueId());
+					}
+				}
 			}
 			toRemove.clear();
 		}

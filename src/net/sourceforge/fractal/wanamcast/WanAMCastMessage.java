@@ -63,5 +63,9 @@ public class WanAMCastMessage extends MulticastMessage implements Cloneable {
 	public String toString(){
 		return "<<"+getUniqueId()+","+clock+","+dest+","+gSource+">>";
 	}
+
+	public boolean commute(WanAMCastMessage m){
+		return false;
+	}
 	
 }
