@@ -30,8 +30,8 @@ import org.junit.Test;
 
 public class WanAMCastTest {
 
-	private static final int nnodes=9;
-	private static final int ngroups=3;
+	private static final int nnodes=12;
+	private static final int ngroups=4;
 	private static final int nmessagesPerNode=10000;
 	
 	private static Map<Node,Membership> network;
@@ -124,15 +124,15 @@ public class WanAMCastTest {
 				streams.get(n).atomicMulticast(msg);
 
 				// Wait it is received
-//				if(dst.contains(network.get(n).groupsOf(n.id).iterator().next().name())){
-//					WanAMCastMessage m = null;
-//					do{
-//						m = learners.get(n.id).q.take();
-//					} while(!m.equals(msg));
-//					amcastTime.add(System.currentTimeMillis()-start);
-//				}else{
+				if(dst.contains(network.get(n).groupsOf(n.id).iterator().next().name())){
+					WanAMCastMessage m = null;
+					do{
+						m = learners.get(n.id).q.take();
+					} while(!m.equals(msg));
+					amcastTime.add(System.currentTimeMillis()-start);
+				}else{
 					learners.get(n.id).q.clear();
-//				}	
+				}	
 					
 			}
 
