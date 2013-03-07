@@ -32,7 +32,7 @@ public class WanAMCastMessage extends MulticastMessage implements Cloneable {
 	public WanAMCastMessage(Serializable s, Collection<String> dest, String gSource, int swidSource){
 		super(s,dest, gSource, swidSource);
 		this.dest=dest;
-		this.clock = 0;
+		this.clock = -1;
 		this.gSource = gSource;
 	}
 	
@@ -66,6 +66,8 @@ public class WanAMCastMessage extends MulticastMessage implements Cloneable {
 
 	public boolean commute(WanAMCastMessage m){
 		return false;
+//		if(m==this) return true;
+//		return false;
 	}
 	
 }

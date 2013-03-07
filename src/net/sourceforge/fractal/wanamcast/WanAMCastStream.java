@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
@@ -67,7 +68,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private HashMap<WanAMCastMessage, Timestamp> msg2ts; 
 	
 	// local Variables going to global so as to enhance the code
-	private HashSet<WanAMCastMessage> toRemove;
 	private HashSet<String> toMyGroup;
 
 	public WanAMCastStream(int id, Group g, String streamName, MulticastStream multicast, PaxosStream paxos){
@@ -85,11 +85,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		intraGroupChannel =  CollectionUtils.newBlockingQueue();
 		consensusDelivered = new HashSet<WanAMCastMessage>();
 		
-		// FIXME We can't garbage according to a FIFO criterion, cause
-		// this primitive does not ensure causal ordering.
+		// FIXME We can garbage according to a causality criterion, cause
+		// this primitive does ensure causal ordering.
 		aDelivered = new LinkedHashMap<String, Integer>(5000,0.75f,true){
 			private static final long serialVersionUID = 1L;
-			private static final int MAX_ENTRIES = 5000;
+			private static final int MAX_ENTRIES = 50000;
 
 			@SuppressWarnings("unchecked")
 			protected boolean removeEldestEntry(Map.Entry eldest) {
@@ -109,8 +109,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 		mainThread = new Thread(this,"WanAMCast:main@size="+myGroup.size()+"@"+this.mySWid+"mainThread");
 		
-		toRemove = new HashSet<WanAMCastMessage>();
-
 		// probes
 		if(ConstantPool.WANAMCAST_DL>0){
 			aDeliveredSize = new ValueRecorder(this+"#aDeliveredSize");
@@ -209,19 +207,14 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							
 							assert m.dest.contains(myGroup.name());
 							assert !msg2ts.containsKey(m);
-							
-							stages.remove(m);
 							if(ConstantPool.WANAMCAST_DL > 3)
 								System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
 							deliver(m);
-							aDelivered.put(m.getUniqueId(),null);
-							if(ConstantPool.WANAMCAST_DL>0) 
-								aDeliveredSize.add(aDelivered.size());
 							
-							//	stages.put(m, 3);
-							//  m.clock = K;
-							//	updateTimestamp(m);
-							//	needToDeliver=true;		
+//								stages.put(m, 3);
+//							 	m.clock = K;
+//								updateTimestamp(m);
+//								needToDeliver=true;		
 							
 						}else{
 
@@ -301,28 +294,16 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	
 	public void atomicMulticast(WanAMCastMessage m){
 		ArrayList<WanAMCastMessage> msgBox = new ArrayList<WanAMCastMessage>();
-		msgBox.add(m);
-		
+		msgBox.add(m);		
 		if(ConstantPool.WANAMCAST_DL > 3)
 			System.out.println(this+" I Wan Atomic Multicast "+m);
-		
-		if( !m.dest.contains(myGroup.name()) ){
-			multicastStream.multicast(
-					new WanAMCastInterGroupMessage(
+		multicastStream.multicast(
+				new WanAMCastInterGroupMessage(
 						msgBox,
 						m.dest,
 						myGroup.name(),
 						mySWid)
-					);
-		}else{ // to not pay an additional intergroup message
-			multicastStream.multicast(
-					new WanAMCastInterGroupMessage(
-						msgBox,
-						toMyGroup,
-						myGroup.name(),
-						mySWid)
-					);
-		}
+				);
 	}
 
 	@Deprecated
@@ -377,7 +358,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					}						
 				}
 				
-				if( m.dest.contains(m.gSource) ){
+				if( m.clock!=-1 ){
 					if(!stage1.containsKey(m)) 
 						stage1.put(m, new HashMap<String,Integer>());
 					stage1.get(m).put(m.gSource, m.clock);
@@ -388,6 +369,14 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 		}
 		
+	}
+	
+	public boolean isClean(){
+		return stages.isEmpty() && msg2ts.isEmpty() && convoyEffectTracker.isEmpty();
+	}
+	
+	public void toClean(){
+		System.out.println(stages.size());
 	}
 
 	@Override
@@ -400,7 +389,9 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	
 	@Override
 	public void deliver(Serializable s) {
+		
 		WanAMCastMessage m = (WanAMCastMessage) s;
+		
 		if( learners.get(m.getMessageType())!=null
 			&&
 			learners.get(m.getMessageType()).size()>0){
@@ -413,10 +404,32 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					System.out.println(this+" I deliver "+m);
 				l.learn(this,(m));
 			}
+		
 		}else{
 			if(ConstantPool.WANAMCAST_DL > 0)
 				System.out.println(this+" got a "+ m.getMessageType() +" to nobody");
 		}
+		
+		// Cleaning
+		intraGroupChannel.remove(m);
+		consensusDelivered.remove(m);
+		stages.remove(m);
+		stage1.remove(m); 
+		if(msg2ts.containsKey(m)){
+			ts2msg.remove(msg2ts.get(m));
+			msg2ts.remove(m);
+		}
+		aDelivered.put(m.getUniqueId(),null);
+		
+		// Performance tracking
+		if(ConstantPool.WANAMCAST_DL>0){ 
+			aDeliveredSize.add(aDelivered.size());
+			if(convoyEffectTracker.containsKey(m.getUniqueId())){
+				convoyEffect.add(System.currentTimeMillis()-convoyEffectTracker.get(m.getUniqueId()));
+				convoyEffectTracker.remove(m.getUniqueId());
+			}
+		}
+		
 	}
 	
 	private void testDeliver(){
@@ -430,9 +443,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 		
 		synchronized(this){
-			
-			toRemove.clear();
-			
+						
 			if(ConstantPool.WANAMCAST_DL > 10){
 				debugALL();
 			}
@@ -440,48 +451,55 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			if(ConstantPool.WANAMCAST_DL > 3)
 				System.out.println(this+" Smallest ts ="+ts2msg.keySet().iterator().next());
 						
-			boolean stopDelivey=false;
+			List<WanAMCastMessage> previous = new ArrayList<WanAMCastMessage>();
+			List<WanAMCastMessage> toDeliver = new ArrayList<WanAMCastMessage>();
 			for(Timestamp ts : ts2msg.keySet()){
-				m = ts2msg.get(ts);
+				
+		 		m = ts2msg.get(ts);
 				assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
-				if( !stopDelivey && stages.get(m)==3 ){
+				
+				if( stages.get(m)==3 ){
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
-					deliver(m);
-					aDelivered.put(m.getUniqueId(),null);
-					if(ConstantPool.WANAMCAST_DL>0) 
-						aDeliveredSize.add(aDelivered.size());
-					toRemove.add(m);				
+					toDeliver.add(m);
 				}else{
-					if(!stopDelivey){
-						stopDelivey=true;
-					}else{
-						if( ConstantPool.WANAMCAST_DL>0 && stages.get(m)==3 ){
-							if(!convoyEffectTracker.containsKey(m.getUniqueId()))
-								convoyEffectTracker.put(m.getUniqueId(),System.currentTimeMillis());
-						}else{
-							break;
-						}
-					}
+					break;
 				}
+			}	
+			
+			for(WanAMCastMessage msg : toDeliver){
+				deliver(msg);
 			}
+			
+//					boolean deliverIt=true;
+//					for(WanAMCastMessage m1:previous){
+//						if(!m.commute(m1)){
+//							deliverIt=false;
+//							break;
+//						}
+//					}
+////					if(!previous.isEmpty()&&deliverIt)
+////						System.out.println("BINGO");
+//						
+//					if(deliverIt){
+//						if(ConstantPool.WANAMCAST_DL > 3)
+//							System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
+//						deliver(m);
+//					}else{
+////						break;
+//						previous.add(m);
+//						if( ConstantPool.WANAMCAST_DL>0 && stages.get(m)==3 ){
+//							if(!convoyEffectTracker.containsKey(m.getUniqueId()))
+//								convoyEffectTracker.put(m.getUniqueId(),System.currentTimeMillis());
+//						}						
+//					}
+//					
+//				}else{
+//					break;
+//					//previous.add(m);
+//				}
+//			}
 
-			for(WanAMCastMessage old : toRemove){
-				intraGroupChannel.remove(old);
-				consensusDelivered.remove(old);
-				stages.remove(old);
-				stage1.remove(old); 
-				Timestamp oldTs = msg2ts.get(old);
-				ts2msg.remove(oldTs);
-				msg2ts.remove(old);
-				if(ConstantPool.WANAMCAST_DL>0){
-					if(convoyEffectTracker.containsKey(old.getUniqueId())){
-						convoyEffect.add(System.currentTimeMillis()-convoyEffectTracker.get(old.getUniqueId()));
-						convoyEffectTracker.remove(old.getUniqueId());
-					}
-				}
-			}
-			toRemove.clear();
 		}
 	}
 

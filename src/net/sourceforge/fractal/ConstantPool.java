@@ -89,9 +89,9 @@ public class ConstantPool {
 
     
     /**
-     * Purge instances information rom memory when the list gets to this size.
+     * Purge instances information from memory when the list gets to this size.
      */
-    public static final int PAXOS_PURGE_MARK = 1000; // This parameter has a huge influence on memory consumption, tweak wisely.
+    public static final int PAXOS_PURGE_MARK = 5000; // This parameter has a huge influence on memory consumption, tweak wisely.
     
     /**
      * Debug information on recovery

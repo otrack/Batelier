@@ -20,6 +20,7 @@ import net.sourceforge.fractal.multicast.MulticastStream;
 import net.sourceforge.fractal.utils.DummyNetwork;
 import net.sourceforge.fractal.utils.ExecutorPool;
 import net.sourceforge.fractal.utils.Node;
+import net.sourceforge.fractal.utils.PerformanceProbe.FloatValueRecorder;
 import net.sourceforge.fractal.wanamcast.WanAMCastMessage;
 import net.sourceforge.fractal.wanamcast.WanAMCastStream;
 
@@ -29,9 +30,9 @@ import org.junit.Test;
 
 public class WanAMCastTest {
 
-	private static final int nnodes=3;
+	private static final int nnodes=9;
 	private static final int ngroups=3;
-	private static final int nmessagesPerNode=1000;
+	private static final int nmessagesPerNode=10000;
 	
 	private static Map<Node,Membership> network;
 	private static Map<Node,WanAMCastStream> streams;
@@ -73,6 +74,11 @@ public class WanAMCastTest {
 				e.printStackTrace();
 			}
 		}
+		
+		for(Node n: network.keySet()){
+			streams.get(n).toClean();
+			assert streams.get(n).isClean();
+		}
 	}
 	
 
@@ -84,19 +90,24 @@ public class WanAMCastTest {
 	private class AMCastTestJob implements Callable<Integer>{
 
 		private Node n;
+		private FloatValueRecorder amcastTime;
 		
 		public AMCastTestJob(Node node){
 			n = node;
+			amcastTime = new FloatValueRecorder(this+"#amcastTime");
+			amcastTime.setFormat("%a");
 		}
 		
 		@Override
 		public Integer call() throws Exception {
-
+			
 			Random rnd = new Random();
+			long start;
 			
 			for(int k=0; k<nmessagesPerNode; k++){
 
-				System.out.println(this+", still "+(nmessagesPerNode-k));
+				if((nmessagesPerNode-k)%500==0)
+					System.out.println(this+", still "+(nmessagesPerNode-k));
 
 				// Build some random (biased) recipient groups
 				Set<String> dst = new HashSet<String>(ngroups-1);
@@ -106,20 +117,22 @@ public class WanAMCastTest {
 					dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[g]).name());
 				}
 
-				// Multicast the message
+				// Multicast the message					
 				WanAMCastMessage msg = new WanAMCastMessage(new Byte[50],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
-				System.out.println("Sending message "+msg);
+				//System.out.println("Sending message "+msg);
+				start=System.currentTimeMillis();
 				streams.get(n).atomicMulticast(msg);
 
 				// Wait it is received
-				if(dst.contains(network.get(n).groupsOf(n.id).iterator().next().name())){
-					WanAMCastMessage m = null;
-					do{
-						m = learners.get(n.id).q.take();
-					} while(!m.equals(msg));
-				}else{
+//				if(dst.contains(network.get(n).groupsOf(n.id).iterator().next().name())){
+//					WanAMCastMessage m = null;
+//					do{
+//						m = learners.get(n.id).q.take();
+//					} while(!m.equals(msg));
+//					amcastTime.add(System.currentTimeMillis()-start);
+//				}else{
 					learners.get(n.id).q.clear();
-				}	
+//				}	
 					
 			}
 
