@@ -37,12 +37,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private ValueRecorder consensusDeliveredSize;
 	private ValueRecorder stagesSize;
 	private TimeRecorder averageConsensusLatency;
+	private Map<String,TimeRecorder> convoyEffectTracker;
+	private ValueRecorder convoyEffect;
 	private ValueRecorder checksum;
+
 	private int deliveredCnt = 0;
-	static{
-	}
-	
-	
 	@SuppressWarnings("unused")
 	private String myName;
 	int mySWid;
@@ -123,6 +122,8 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			averageConsensusLatency = new TimeRecorder(this+"#averageConsensusLatency");
 			checksum = new ValueRecorder(this+"#checksum");
 			checksum.setFormat("%t");
+			convoyEffectTracker = new HashMap<String, TimeRecorder>();
+			convoyEffect = new ValueRecorder(this+"#convoyEffect");
 		}
 
 		
