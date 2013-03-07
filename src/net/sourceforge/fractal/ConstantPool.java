@@ -91,7 +91,7 @@ public class ConstantPool {
     /**
      * Purge instances information rom memory when the list gets to this size.
      */
-    public static final int PAXOS_PURGE_MARK = 100; // This parameter has a huge influence on memory consumption, tweak wisely.
+    public static final int PAXOS_PURGE_MARK = 1000; // This parameter has a huge influence on memory consumption, tweak wisely.
     
     /**
      * Debug information on recovery
@@ -117,7 +117,7 @@ public class ConstantPool {
     
 
     /**
-     * Store transactions outcome on disk?
+     * Store transactions outcome on disk?.addA
      */
     public static final boolean ABC_COMMIT_USE_STABLE_STORAGE = true;
     public static final boolean ABC_COMMIT_USE_BDB = true;

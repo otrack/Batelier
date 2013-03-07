@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 
+import javax.management.RuntimeErrorException;
+
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.Learner;
 import net.sourceforge.fractal.Stream;
@@ -145,7 +147,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			try {
 				
 				if(ConstantPool.WANAMCAST_DL > 6)
-					System.out.println(this+ " I start round "+ K +" queue size="+intraGroupChannel.size());
+					System.out.println(this+ " I start round "+ K);
 	
 				if(myGroup.size()>1){
 					
@@ -166,6 +168,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							if(ConstantPool.WANAMCAST_DL > 6)
 								System.out.println(this+" I propose instance " + K + "; messages "+ p);
 							paxosStream.propose(p,K);
+							intraGroupChannel.addAll(p);
 						}
 
 					}else{
@@ -182,8 +185,8 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					intraGroupChannel.drainTo(d);
 				}
 				
-				if(ConstantPool.WANAMCAST_DL > 3)
-					System.out.println(this+" I decide instance " + K + "; messages "+ d);
+				if(ConstantPool.WANAMCAST_DL > 6)
+					System.out.println(this+" I decide instance " + K);
 				
 				maxClock=K;
 
@@ -204,11 +207,22 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						
 						if(m.dest.size()==1){ 
 							
-							stages.put(m, 3);
-							m.clock = K;
-							updateTimestamp(m);
-							needToDeliver=true;
-						
+							assert m.dest.contains(myGroup.name());
+							assert !msg2ts.containsKey(m);
+							
+							stages.remove(m);
+							if(ConstantPool.WANAMCAST_DL > 3)
+								System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
+							deliver(m);
+							aDelivered.put(m.getUniqueId(),null);
+							if(ConstantPool.WANAMCAST_DL>0) 
+								aDeliveredSize.add(aDelivered.size());
+							
+							//	stages.put(m, 3);
+							//  m.clock = K;
+							//	updateTimestamp(m);
+							//	needToDeliver=true;		
+							
 						}else{
 
 							if(!stages.containsKey(m))  
@@ -243,10 +257,10 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							stage1.get(m).put(myGroup.name(), m.clock);	
 							updateTimestamp(m);
 							needToDeliver |= testEndGathering(m);
+							
+							// consensusDelivered can already contain m.getUniqueId(), if m is in stage 2
+							consensusDelivered.add(m);
 						}
-						
-						// consensusDelivered can already contain m.getUniqueId(), if m is in stage 2
-						consensusDelivered.add(m);
 						
 						if (ConstantPool.WANAMCAST_DL>0)
 							consensusDeliveredSize.add(consensusDelivered.size());
