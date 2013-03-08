@@ -35,7 +35,7 @@ public class ConstantPool {
     public static final int ABCAST_DL = 0;      // Atomic broadcast.
     public static final int BROADCAST_DL = 0;      // Reliable broadcast.
     public static final int MULTICAST_DL = 0;      // Reliable multicast.
-    public static final int WANAMCAST_DL = 0;   // WAN Atomic multicast
+    public static final int WANAMCAST_DL = 1;   // WAN Atomic multicast
     public static final int PAXOS_COMMIT_DL = 0;// Paxos Commit
     public static final int WANABCAST_DL = 0;   // WAN Atomic broadcast
     public static final int FTWanAMCast_DL = 0; // Fault-Tolerant Wan Atomic Multicast
