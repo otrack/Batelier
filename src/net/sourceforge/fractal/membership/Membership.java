@@ -134,6 +134,10 @@ public class Membership {
     	return allGroups.values();
     }
 
+    public Collection<String> allGroupNames(){
+    	return allGroups.keySet();
+    }
+    
     /**
      * 
      * Return the set of groups containing substring. 

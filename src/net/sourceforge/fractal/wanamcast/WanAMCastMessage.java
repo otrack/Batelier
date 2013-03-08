@@ -65,9 +65,8 @@ public class WanAMCastMessage extends MulticastMessage implements Cloneable {
 	}
 
 	public boolean commute(WanAMCastMessage m){
+		if(m==this) return true;
 		return false;
-//		if(m==this) return true;
-//		return false;
 	}
 	
 }

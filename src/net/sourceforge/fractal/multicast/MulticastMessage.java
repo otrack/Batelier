@@ -68,10 +68,6 @@ public class MulticastMessage extends UMessage implements Cloneable{
 		this.gSource = (String)in.readObject();
 	}
 	
-	public boolean equals(Object o){
-		return super.equals(o);
-	}
-	
 	public String toString(){
 		return "<"+getUniqueId()+','+gSource+','+dest+","+serializable+">";
 	}

@@ -372,11 +372,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	}
 	
 	public boolean isClean(){
-		return stages.isEmpty() && msg2ts.isEmpty() && convoyEffectTracker.isEmpty();
-	}
-	
-	public void toClean(){
-		System.out.println(stages.size());
+		return stages.isEmpty() && msg2ts.isEmpty() && ts2msg.isEmpty() && intraGroupChannel.isEmpty();
 	}
 
 	@Override
@@ -411,6 +407,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 		
 		// Cleaning
+		aDelivered.put(m.getUniqueId(),null);
 		intraGroupChannel.remove(m);
 		consensusDelivered.remove(m);
 		stages.remove(m);
@@ -419,7 +416,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			ts2msg.remove(msg2ts.get(m));
 			msg2ts.remove(m);
 		}
-		aDelivered.put(m.getUniqueId(),null);
 		
 		// Performance tracking
 		if(ConstantPool.WANAMCAST_DL>0){ 
@@ -443,62 +439,47 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 		
 		synchronized(this){
-						
-			if(ConstantPool.WANAMCAST_DL > 10){
-				debugALL();
-			}
 
 			if(ConstantPool.WANAMCAST_DL > 3)
 				System.out.println(this+" Smallest ts ="+ts2msg.keySet().iterator().next());
 						
-			List<WanAMCastMessage> previous = new ArrayList<WanAMCastMessage>();
-			List<WanAMCastMessage> toDeliver = new ArrayList<WanAMCastMessage>();
+			List<WanAMCastMessage> previous = new ArrayList<WanAMCastMessage>(ts2msg.size());
+			List<WanAMCastMessage> toDeliver = new ArrayList<WanAMCastMessage>(ts2msg.size());
+			
 			for(Timestamp ts : ts2msg.keySet()){
 				
 		 		m = ts2msg.get(ts);
 				assert stages.containsKey(m) : m + " "+ ts + " "+ts2msg;
+									
+				if( stages.get(m)!=3 ){
+					previous.add(m);
+					continue;
+				}
 				
-				if( stages.get(m)==3 ){
-					if(ConstantPool.WANAMCAST_DL > 3)
-						System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
+				boolean deliverIt=true;
+				for(WanAMCastMessage m1:previous){
+					if(!m.commute(m1)){
+						deliverIt=false;
+						break;
+					}
+				}
+					
+				if(deliverIt){
 					toDeliver.add(m);
 				}else{
-					break;
+					previous.add(m);
+					if( ConstantPool.WANAMCAST_DL>0 && stages.get(m)==3 ){
+						if(!convoyEffectTracker.containsKey(m.getUniqueId()))
+							convoyEffectTracker.put(m.getUniqueId(),System.currentTimeMillis());
+					}						
 				}
+				
 			}	
 			
 			for(WanAMCastMessage msg : toDeliver){
 				deliver(msg);
 			}
 			
-//					boolean deliverIt=true;
-//					for(WanAMCastMessage m1:previous){
-//						if(!m.commute(m1)){
-//							deliverIt=false;
-//							break;
-//						}
-//					}
-////					if(!previous.isEmpty()&&deliverIt)
-////						System.out.println("BINGO");
-//						
-//					if(deliverIt){
-//						if(ConstantPool.WANAMCAST_DL > 3)
-//							System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
-//						deliver(m);
-//					}else{
-////						break;
-//						previous.add(m);
-//						if( ConstantPool.WANAMCAST_DL>0 && stages.get(m)==3 ){
-//							if(!convoyEffectTracker.containsKey(m.getUniqueId()))
-//								convoyEffectTracker.put(m.getUniqueId(),System.currentTimeMillis());
-//						}						
-//					}
-//					
-//				}else{
-//					break;
-//					//previous.add(m);
-//				}
-//			}
 
 		}
 	}
@@ -566,12 +547,12 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	}
 
-	private void debugALL(){
-		if(ts2msg.keySet().size()>0){
-			System.out.println(this+" STAGE1 = " + stage1);
-			System.out.println(this+" STAGES = " + stages);
-			System.out.println(this+" ts2msg = "+ ts2msg +" /// smallest: "+ts2msg.keySet().iterator().next());
-		}
+	public String detailedInformation(){
+		return "STAGE1 = " + stage1
+				+ "\nSTAGES = " + stages
+				+ "\nts2msg = "+ ts2msg
+				+ "\nIntraGrouChannel = "+intraGroupChannel
+				+ "\nConvoyEffectTracker = "+convoyEffectTracker;
 	}
 
 }	

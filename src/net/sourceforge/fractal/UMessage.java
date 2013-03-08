@@ -88,6 +88,7 @@ public class UMessage extends Message implements Cloneable, Comparable<UMessage>
 	}
 	
 	public boolean equals(Object arg0) {
+		if(arg0 == this) return true;
 		if(arg0 == null ) return false;
 		else if (arg0 instanceof UMessage ){
 		return	this.swid.equals(((UMessage)arg0).getUniqueId());

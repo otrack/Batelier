@@ -76,8 +76,7 @@ public class WanAMCastTest {
 		}
 		
 		for(Node n: network.keySet()){
-			streams.get(n).toClean();
-			assert streams.get(n).isClean();
+			assert streams.get(n).isClean() : ""+streams.get(n).detailedInformation();
 		}
 	}
 	
@@ -103,23 +102,30 @@ public class WanAMCastTest {
 			
 			Random rnd = new Random();
 			long start;
+			int missingBarriers=nnodes;
 			
-			for(int k=0; k<nmessagesPerNode; k++){
+			for(int k=1; k<=nmessagesPerNode; k++){
 
 				if((nmessagesPerNode-k)%500==0)
-					System.out.println(this+", still "+(nmessagesPerNode-k));
+					System.out.println(this+", still "+(nmessagesPerNode-k)+" messages");
 
 				// Build some random (biased) recipient groups
+				// The last message acts as a barrier
 				Set<String> dst = new HashSet<String>(ngroups-1);
-				int ngs =  rnd.nextInt(ngroups) + 1;
-				for(int i=0; i<=ngs ; i++){
-					Integer g = rnd.nextInt(ngroups);
-					dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[g]).name());
+				WanAMCastMessage msg = null;
+				if(k<nmessagesPerNode){
+					int ngs =  rnd.nextInt(ngroups) + 1;
+					for(int i=0; i<=ngs ; i++){
+						Integer g = rnd.nextInt(ngroups);
+						dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[g]).name());
+					}
+					msg = new WanAMCastMessage(new Byte[50],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
+				}else{
+					dst.addAll(network.get(n).allGroupNames());
+					msg = new WanAMCastMessage(null,dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
 				}
 
-				// Multicast the message					
-				WanAMCastMessage msg = new WanAMCastMessage(new Byte[50],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
-				//System.out.println("Sending message "+msg);
+				// Multicast the message
 				start=System.currentTimeMillis();
 				streams.get(n).atomicMulticast(msg);
 
@@ -128,15 +134,21 @@ public class WanAMCastTest {
 					WanAMCastMessage m = null;
 					do{
 						m = learners.get(n.id).q.take();
+						if(m.serializable==null) missingBarriers--;
 					} while(!m.equals(msg));
 					amcastTime.add(System.currentTimeMillis()-start);
-				}else{
-					learners.get(n.id).q.clear();
 				}	
 					
 			}
-
-			System.out.println(this+", over");
+						
+			System.out.println(this+", over, grabbing missing barrier(s) now");
+			
+			while(missingBarriers!=0){
+				WanAMCastMessage m = learners.get(n.id).q.take();
+				if(m.serializable==null){
+					missingBarriers--;
+				}
+			}
 			
 			return 0;
 			
