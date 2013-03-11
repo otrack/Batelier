@@ -47,34 +47,35 @@ public class MulticastTest {
 	@Test
 	public void testMulticastStream(){
 		
-		for(Node n: network.keySet()){
-			
-			// Build some random recipient groups
-			Collection<String> dst = new ArrayList<String>();
-			Random rnd = new Random();
-			for(int i=0; i<Math.max(1,rnd.nextInt(ngroups)); i++){
-				dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[i]).name());
-			}
-			
-			// Multicast the message
-			MulticastMessage msg = new MulticastMessage(null,dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
-			streams.get(n).multicast(msg);
-			
-			// Check it was received
-			for(String name: dst){
-				Group g = network.get(n).group(name);
-				for(int swid: g.members()){	
-					MulticastMessage m = null; 
-					try {
-						m = learners.get(swid).q.take();
-					} catch (InterruptedException e) {
-						// unreachable code
-						e.printStackTrace();
+		for(int j=0;j<1000;j++){
+			for(Node n: network.keySet()){
+
+				// Build some random recipient groups
+				Collection<String> dst = new ArrayList<String>();
+				Random rnd = new Random();
+				for(int i=0; i<Math.max(1,rnd.nextInt(ngroups)); i++){
+					dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[i]).name());
+				}
+
+				// Multicast the message
+				MulticastMessage msg = new MulticastMessage(null,dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
+				streams.get(n).multicast(msg);
+
+				// Check it was received
+				for(String name: dst){
+					Group g = network.get(n).group(name);
+					for(int swid: g.members()){	
+						MulticastMessage m = null; 
+						try {
+							m = learners.get(swid).q.take();
+						} catch (InterruptedException e) {
+							// unreachable code
+							e.printStackTrace();
+						}
+						Assert.assertTrue(m.equals(msg));
 					}
-					Assert.assertTrue(m.equals(msg));
 				}
 			}
-			
 		}
 	}
 	

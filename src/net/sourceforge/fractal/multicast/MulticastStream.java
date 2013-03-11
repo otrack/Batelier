@@ -113,7 +113,7 @@ public final class MulticastStream extends Stream implements Learner {
 			for(String g : m.getDest()){
 				if(membership.group(g)==null)
 					throw new IllegalArgumentException("Group "+g+" does not exist.");
-				membership.group(g).broadcast(bb.duplicate());
+				membership.group(g).broadcast(bb);
 			}
 			
 		}

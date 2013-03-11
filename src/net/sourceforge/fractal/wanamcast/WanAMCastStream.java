@@ -8,9 +8,9 @@ package net.sourceforge.fractal.wanamcast;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -24,6 +24,7 @@ import net.sourceforge.fractal.membership.Group;
 import net.sourceforge.fractal.multicast.MulticastMessage;
 import net.sourceforge.fractal.multicast.MulticastStream;
 import net.sourceforge.fractal.utils.CollectionUtils;
+import net.sourceforge.fractal.utils.PerformanceProbe.FloatValueRecorder;
 import net.sourceforge.fractal.utils.PerformanceProbe.TimeRecorder;
 import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
 
@@ -38,10 +39,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private ValueRecorder consensusDeliveredSize;
 	private ValueRecorder stagesSize;
 	private TimeRecorder averageConsensusLatency;
-	private Map<String,Long> convoyEffectTracker;
-	private ValueRecorder convoyEffect;
+	private Map<WanAMCastMessage,Long> convoyEffectTracker;
+	private FloatValueRecorder convoyEffect;
 	private ValueRecorder checksum;
-
+	private FloatValueRecorder latency;
+	
 	private int deliveredCnt = 0;
 	@SuppressWarnings("unused")
 	private String myName;
@@ -55,7 +57,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private BlockingQueue<WanAMCastMessage> intraGroupChannel;
 	private HashSet<WanAMCastMessage> consensusDelivered;
-	private Map<String,Integer> aDelivered; // Does not contain msg with dest={myGroup.name()}
+	private Collection<WanAMCastMessage> aDelivered; // Does not contain msg with dest={myGroup.name()}
 	
 	Thread mainThread;
 	
@@ -71,8 +73,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private HashSet<String> toMyGroup;
 
 	public WanAMCastStream(int id, Group g, String streamName, MulticastStream multicast, PaxosStream paxos){
-
-		super();
 		this.mySWid = id;
 		this.toMyGroup = new HashSet<String>();
 		toMyGroup.add(g.name());
@@ -82,21 +82,19 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		this.multicastStream = multicast;
 		this.paxosStream = paxos;
 
-		intraGroupChannel =  CollectionUtils.newBlockingQueue();
-		consensusDelivered = new HashSet<WanAMCastMessage>();
+		this.intraGroupChannel =  CollectionUtils.newBlockingQueue();
+		this.consensusDelivered = new HashSet<WanAMCastMessage>();
 		
-		// FIXME We can garbage according to a causality criterion, cause
-		// this primitive does ensure causal ordering.
-		aDelivered = new LinkedHashMap<String, Integer>(5000,0.75f,true){
-			private static final long serialVersionUID = 1L;
-			private static final int MAX_ENTRIES = 50000;
-
-			@SuppressWarnings("unchecked")
-			protected boolean removeEldestEntry(Map.Entry eldest) {
-				return size() > MAX_ENTRIES;
-			}
-		};
-
+		this.aDelivered = CollectionUtils.newBoundedSet(5000);
+//		aDelivered = CollectionUtils.newBoundedSet(
+//				new Comparator<WanAMCastMessage>() {
+//					private final ClassCastException ex = new ClassCastException();
+//					public int compare(WanAMCastMessage m, WanAMCastMessage n){
+//						if(m.source!=n.source) throw ex;
+//						return m.compareTo(n);
+//					}
+//				});
+				
 		this.stages = new HashMap<WanAMCastMessage, Integer>();
 		this.stage1 = new HashMap<WanAMCastMessage, HashMap<String,Integer>>();
 
@@ -121,9 +119,11 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			averageConsensusLatency.setFormat("%a");
 			checksum = new ValueRecorder(this+"#checksum");
 			checksum.setFormat("%t");
-			convoyEffectTracker = new HashMap<String, Long>();
-			convoyEffect = new ValueRecorder(this+"#convoyEffect");
+			convoyEffectTracker = new HashMap<WanAMCastMessage, Long>();
+			convoyEffect = new FloatValueRecorder(this+"#convoyEffect");
 			convoyEffect.setFormat("%a");
+			latency = new FloatValueRecorder(this+"#latency");
+			latency.setFormat("%a");
 		}
 
 		
@@ -157,7 +157,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							if(ConstantPool.WANAMCAST_DL>0 ) averageConsensusLatency.start();
 							synchronized(this){
 								while( (msg=intraGroupChannel.poll()) != null){
-									if( !aDelivered.containsKey(msg.getUniqueId())
+									if( !aDelivered.contains(msg)
 											&&
 											( ! consensusDelivered.contains(msg.getUniqueId()) || stages.get(msg) == 2 ))
 										p.add(msg);
@@ -197,7 +197,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						if(ConstantPool.WANAMCAST_DL > 6)
 							System.out.println(this+" Next message "+m);
 						
-						if( aDelivered.containsKey(m.getUniqueId())) {
+						if( aDelivered.contains(m)) {
 							if(ConstantPool.WANAMCAST_DL > 3)
 								System.out.println(this+" I kick "+m);
 							continue;
@@ -208,7 +208,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							assert m.dest.contains(myGroup.name());
 							assert !msg2ts.containsKey(m);
 							if(ConstantPool.WANAMCAST_DL > 3)
-								System.out.println(this+" I atomic deliver "+m+" with ts="+msg2ts.get(m));
+								System.out.println(this+" I atomic deliver "+m+" (one group)");
 							deliver(m);
 							
 //								stages.put(m, 3);
@@ -292,6 +292,16 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 	}
 	
+	/** 
+	 * Atomic message a message to the set of destination groups.
+	 * Notice that this primitive ensures both atomicity and causality.
+	 * Moreover, by default, it relives on the fact that 
+	 * if amcast(m) happens-before amcast(m') then 
+	 * amdeliver(m) happens-before amdeliver(m').
+	 * In other words, the client using amcast should behave sequentially.
+	 * 
+	 * @param m the message to send.
+	 */
 	public void atomicMulticast(WanAMCastMessage m){
 		ArrayList<WanAMCastMessage> msgBox = new ArrayList<WanAMCastMessage>();
 		msgBox.add(m);		
@@ -343,7 +353,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				assert(m.dest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.dest;
 				assert(!m.gSource.equals(myGroup.name()) || myGroup.contains(m.source)) : m+" "+m.source;
 				
-				if( aDelivered.containsKey(m.getUniqueId()) ) {
+				if( aDelivered.contains(m) ) {
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I kick "+m);
 					continue;
@@ -407,7 +417,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 		
 		// Cleaning
-		aDelivered.put(m.getUniqueId(),null);
+		aDelivered.add(m);
 		intraGroupChannel.remove(m);
 		consensusDelivered.remove(m);
 		stages.remove(m);
@@ -420,10 +430,13 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		// Performance tracking
 		if(ConstantPool.WANAMCAST_DL>0){ 
 			aDeliveredSize.add(aDelivered.size());
-			if(convoyEffectTracker.containsKey(m.getUniqueId())){
-				convoyEffect.add(System.currentTimeMillis()-convoyEffectTracker.get(m.getUniqueId()));
-				convoyEffectTracker.remove(m.getUniqueId());
+			if(convoyEffectTracker.containsKey(m)){
+				convoyEffect.add(System.currentTimeMillis()-convoyEffectTracker.get(m));
+				convoyEffectTracker.remove(m);
+			}else{
+				convoyEffect.add(0); // to get an average				
 			}
+			latency.add(System.currentTimeMillis()-m.start);
 		}
 		
 	}
@@ -469,8 +482,8 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				}else{
 					previous.add(m);
 					if( ConstantPool.WANAMCAST_DL>0 && stages.get(m)==3 ){
-						if(!convoyEffectTracker.containsKey(m.getUniqueId()))
-							convoyEffectTracker.put(m.getUniqueId(),System.currentTimeMillis());
+						if(!convoyEffectTracker.containsKey(m))
+							convoyEffectTracker.put(m,System.currentTimeMillis());
 					}						
 				}
 				

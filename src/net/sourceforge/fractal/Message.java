@@ -51,15 +51,17 @@ public class Message implements Messageable,Cloneable{
     }
 
     public int source;
-        
+       
     public Message(){}
        
     public Message(Message m){
     	this.source = m.source;
     }
     
-    public String getMessageType(){return this.getClass().getSimpleName();}
-    
+    public String getMessageType(){
+    	return this.getClass().getSimpleName();
+    }
+        
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         source = in.readInt();
     }
@@ -91,7 +93,7 @@ public class Message implements Messageable,Cloneable{
 		
 		// 1 - Assign source
 		m.source=id;
-
+		
 		// 2 - Serialize data
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		MessageOutputStream mos;
@@ -130,5 +132,5 @@ public class Message implements Messageable,Cloneable{
 		
 		return m;
 	}
-    
+    	
 }

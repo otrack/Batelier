@@ -4,6 +4,7 @@ package net.sourceforge.fractal.utils;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -20,6 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
+
+import javax.management.RuntimeErrorException;
 
 public class CollectionUtils {
 	
@@ -107,16 +110,6 @@ public class CollectionUtils {
         return vec.elementAt(index);
     }
 
-    //mw-
-    //public static <K> void setElementAt(Vector<K> vec, int index, K value) {
-    //    if(vec.size() <= index){
-    //        vec.setSize(index + 10);
-    //    }
-    //    vec.setElementAt(value,index);
-    //}
-    //mw- end
-    //mw+
-    //returns previous value at the index position, if position didn't exist returns null
     public static <K> K setElementAt(Vector<K> vec, int index, K value) {
     	K retVal;
         if(vec.size() <= index){
@@ -339,6 +332,209 @@ public class CollectionUtils {
 		};
 		
 	}
+	
+	public static <E,V> Map<E,V> newBoundedMap(final int maxSize){
+		return  new LinkedHashMap<E, V>() {
+			private static final long serialVersionUID = 1L;
+			protected boolean removeEldestEntry(Map.Entry eldest) {
+					return this.size() > maxSize;
+			}
+		};
+	}
+	
+	
+	public static <E> Set<E> newBoundedSet(final int maxSize){
+		return new Set<E>() {
+			
+			private final Map<E,Integer> m = CollectionUtils.newBoundedMap(maxSize);
+			
+			@Override
+			public Iterator<E> iterator() {
+				return m.keySet().iterator();
+			}
+
+			@Override
+			public int size() {
+				return m.size();
+			}
+
+			@Override
+			public boolean add(E e) {
+				return m.put(e, 0)!=null;
+			}
+
+			@Override
+			public boolean addAll(Collection<? extends E> c) {
+				boolean ret=false;
+				for(E e:c){
+					ret|=add(e);
+				}
+				return ret;
+			}
+
+			@Override
+			public void clear() {
+				m.clear();
+			}
+
+			@Override
+			public boolean contains(Object o) {
+				return m.containsKey(o);
+			}
+
+			@Override
+			public boolean containsAll(Collection<?> c) {
+				boolean ret=false;
+				for(Object e:c){
+					ret|=contains(e);
+				}
+				return ret;
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return m.isEmpty();
+			}
+
+			@Override
+			public boolean remove(Object o) {
+				return m.remove(o)==null;
+			}
+
+			@Override
+			public boolean removeAll(Collection<?> c) {
+				boolean ret=false;
+				for(Object e:c){
+					ret|=remove(e);
+				}
+				return ret;
+			}
+
+			@Override
+			public boolean retainAll(Collection<?> arg0) {
+				return false;
+			}
+
+			@Override
+			public Object[] toArray() {
+				return m.keySet().toArray();
+			}
+
+			@Override
+			public <T> T[] toArray(T[] a) {
+				return m.keySet().toArray(a);
+			}
+		};
+	}
+	
+	public static <E> Set<E> newBoundedSet(final Comparator<E> comparator){
+		
+		return new Set<E>() {
+
+			// Objects fields
+			private Set<E> s = new HashSet<E>();
+			private List<E> toRemove = new ArrayList<E>();
+			
+			@Override
+			public int size() {
+				return s.size();
+			}
+
+			@Override
+			public Iterator<E> iterator() {
+				return s.iterator();
+			}
+
+			@Override
+			public boolean add(E e) {
+				toRemove.clear();
+				for(E f:s){
+					try{
+						if(comparator.compare(f, e)<0){ 
+							toRemove.add(f);
+						}
+					}catch(ClassCastException ex){};
+				}
+				s.removeAll(toRemove);
+				return s.add(e);
+			}
+
+			@Override
+			public boolean addAll(Collection<? extends E> d) {
+				boolean ret=false;
+				for(E e: d){
+					ret|=this.add(e);
+				}
+				return ret;
+			}
+
+			@Override
+			public void clear() {
+				s.clear();
+			}
+			
+			@Override
+			public boolean contains(Object o) {
+		        if(o==null) return false;
+		        if(s.isEmpty()) return false;
+		        if(!s.iterator().next().getClass().equals(o.getClass())) return false; // FIXME better to have (o instanceof E) ?
+ 				for(E f:s){
+					try{
+						if(comparator.compare(f,(E)o)>=0){ 
+							return true;
+						}
+					}catch(ClassCastException ex){};						
+				}
+				return false;
+			}
+			
+			@Override
+			public boolean containsAll(Collection<?> d) {
+				boolean ret=false;
+				for(Object e: d){
+					ret|=this.contains(e);
+				}
+				return ret;
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return s.isEmpty();
+			}
+
+			@Override
+			public boolean remove(Object o) {
+				throw new RuntimeErrorException(null, "NYS");
+			}
+
+			@Override
+			public boolean removeAll(Collection<?> d) {
+				throw new RuntimeErrorException(null, "NYS");
+			}
+
+			@Override
+			public boolean retainAll(Collection<?> d) {
+				return s.retainAll(d);
+			}
+
+			@Override
+			public Object[] toArray() {
+				return s.toArray();
+			}
+
+			@Override
+			public <T> T[] toArray(T[] a) {
+				return s.toArray(a);
+			}
+			
+		};
+
+	}
+	
+	
+	// 
+	// PRIVATE
+	//
 	
     private static <E> Collection<E> asCollection(final E[] elements) {
         return new AbstractCollection<E>() {

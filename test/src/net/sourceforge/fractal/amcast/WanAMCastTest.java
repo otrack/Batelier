@@ -30,8 +30,8 @@ import org.junit.Test;
 
 public class WanAMCastTest {
 
-	private static final int nnodes=12;
-	private static final int ngroups=4;
+	private static final int nnodes=2;
+	private static final int ngroups=2;
 	private static final int nmessagesPerNode=10000;
 	
 	private static Map<Node,Membership> network;

@@ -56,12 +56,6 @@ public class TCPGroup extends Group {
 	//	Interfaces		
 	//
 
-	public static void validateMagic(int magic) throws IllegalArgumentException
-	{
-		if (magic != ConstantPool.PROTOCOL_MAGIC)
-			throw new IllegalArgumentException("invalid protocol header");
-	}
-
 	@Override
 	public synchronized boolean joinGroup() {
 		if(!swid2ip.containsKey(membership.myId())) return false;

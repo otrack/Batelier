@@ -5,6 +5,7 @@ file attached to it to see how you can use it, edit or distributed.
 
 
 package net.sourceforge.fractal.wanamcast;
+
 /**   
 * @author P. Sutra
 * 
@@ -14,50 +15,47 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import net.sourceforge.fractal.Messageable;
-import net.sourceforge.fractal.multicast.MulticastMessage;
+import net.sourceforge.fractal.UMessage;
 
-public class WanAMCastMessage extends MulticastMessage implements Cloneable {
+public class WanAMCastMessage extends UMessage {
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
+
 	public Integer clock;
+	public Collection<String> dest;
+	public String gSource;
+	public long start;
 	
 	@Deprecated
 	public WanAMCastMessage(){	
 	}
 	
 	public WanAMCastMessage(Serializable s, Collection<String> dest, String gSource, int swidSource){
-		super(s,dest, gSource, swidSource);
-		this.dest=dest;
+		super(s,swidSource);
 		this.clock = -1;
+		this.dest=dest;
 		this.gSource = gSource;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Object clone(){
-		WanAMCastMessage m = (WanAMCastMessage)super.clone();
-		m.clock = this.clock;
-		m.dest = new ArrayList<String>(this.dest);
-		m.gSource = this.gSource;
-		return m;
+		this.start = System.currentTimeMillis();
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {
 		 super.writeExternal(out);
-		 out.writeObject(dest);
 		 out.writeObject(clock);
+		 out.writeObject(dest);
 		 out.writeObject(gSource);
+		 out.writeLong(start);
 	}
 		 
 	@SuppressWarnings("unchecked")
 	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
-		dest = (Collection<String>)in.readObject();
 		clock = (Integer)in.readObject();
+		dest = (Collection<String>)in.readObject();
 		gSource = (String)in.readObject();
+		start = in.readLong();
 	}
 		
 	public String toString(){

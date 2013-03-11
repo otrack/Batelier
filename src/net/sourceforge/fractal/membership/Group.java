@@ -115,17 +115,17 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	
 	protected final void deliver(ByteBuffer[] toRecv, TCPGroupP2PConnection connection)
 	throws InterruptedException{
-		queue.put(toRecv);
-//		for(ByteBuffer bb : toRecv)
-//			try {
-//				deliver(Message.unpack(bb));
-//			} catch (ClassNotFoundException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
+//		queue.put(toRecv);
+		for(ByteBuffer bb : toRecv)
+			try {
+				deliver(Message.unpack(bb));
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -233,6 +233,12 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	//
 	// Others
 	//
+	
+	public static void validateMagic(int magic) throws IllegalArgumentException
+	{
+		if (magic != ConstantPool.PROTOCOL_MAGIC)
+			throw new IllegalArgumentException("invalid protocol header");
+	}
 	
 	public String name() {
 		return name;

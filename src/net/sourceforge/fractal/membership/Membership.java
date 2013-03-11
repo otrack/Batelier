@@ -128,8 +128,18 @@ public class Membership {
     	UDPGroup ret = new UDPGroup(this,name,ip, port);
     	allGroups.put(name, ret);
     	return ret;
-    }   
-        
+    }
+
+    public NettyGroup getOrCreateNettyGroup(String name, int port)  throws IllegalArgumentException {
+    	if(allGroups.containsKey(name) && !(allGroups.get(name) instanceof TCPGroup))
+    		throw new IllegalArgumentException("A group of the same name but wrong type exists");    	
+    	if(allGroups.containsKey(name))
+    		return (NettyGroup) allGroups.get(name);
+    	NettyGroup ret = new NettyGroup(this,name,port);
+    	allGroups.put(name,ret);
+    	return ret;
+    }
+
     public Collection<Group> allGroups(){
     	return allGroups.values();
     }
@@ -173,7 +183,7 @@ public class Membership {
 		List<Integer> peers = new ArrayList<Integer>(swid2ip.keySet()); 
 		
 		for(int i=0; i<nbGroups;i++){
-			Group g = getOrCreateTCPGroup(String.valueOf(i),8880+i);
+			Group g = getOrCreateNettyGroup(String.valueOf(i),8880+i);
 			for(int p = i*(swid2ip.size()/nbGroups); p<(i+1)*(swid2ip.size()/nbGroups); p++ ){
 				g.putNode(peers.get(p),swid2ip.get(peers.get(p)));
 			}

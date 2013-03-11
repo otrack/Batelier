@@ -35,9 +35,8 @@ import net.sourceforge.fractal.Stream;
 import net.sourceforge.fractal.broadcast.BroadcastStream;
 import net.sourceforge.fractal.consensus.paxos.PaxosStream;
 import net.sourceforge.fractal.membership.Group;
-import net.sourceforge.fractal.membership.Membership;
-import net.sourceforge.fractal.multicast.MulticastStream;
 import net.sourceforge.fractal.multicast.MulticastMessage;
+import net.sourceforge.fractal.multicast.MulticastStream;
 import net.sourceforge.fractal.utils.CollectionUtils;
 
 

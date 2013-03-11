@@ -62,14 +62,6 @@ public class UMessage extends Message implements Cloneable, Comparable<UMessage>
 	public void setUniqueId(String s){
 		swid = s;
 	}
-		
-	public Object clone(){
-		UMessage m = (UMessage)super.clone();
-		m.serializable = this.serializable;
-		m.swid = this.swid;
-		m.source = this.source;
-		return m;
-	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {
 		 super.writeExternal(out);
