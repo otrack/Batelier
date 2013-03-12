@@ -7,7 +7,7 @@ import net.sourceforge.fractal.Messageable;
 import net.sourceforge.fractal.multicast.MulticastMessage;
 
 
-public class WanAMCastInterGroupMessage extends MulticastMessage implements Cloneable{
+public class WanAMCastInterGroupMessage extends MulticastMessage {
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	

@@ -287,6 +287,10 @@ public class Membership {
     	return swid2ip.keySet();
     }
     
+    public boolean contains(int swid){
+    	return swid2ip.containsKey(swid);
+    }
+    
     public int peerIdOf(String address){
     	return ip2swid.get(address);
     }

@@ -625,7 +625,7 @@ public abstract class PerformanceProbe {
 		//
 		public TimeRecorder(String name) {
 			super(name);
-			setFactor(1000);
+			setFactor(1000000);
 			setFormat("%m/%a/%Mus [#%c - %tus]");
 		}
 

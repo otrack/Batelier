@@ -169,7 +169,7 @@ public final class MulticastStream extends Stream implements Learner {
 		}
 		
 		public String toString(){
-			return "Multicast:"+membership.myId()+":" +streamName;
+			return "Multicast:" +streamName+"@"+membership.myId();
 		}
 		
 }

@@ -18,15 +18,13 @@ import java.io.Serializable;
 import java.util.Collection;
 
 import net.sourceforge.fractal.Messageable;
-import net.sourceforge.fractal.UMessage;
+import net.sourceforge.fractal.multicast.MulticastMessage;
 
-public class WanAMCastMessage extends UMessage {
+public class WanAMCastMessage extends MulticastMessage{
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
 	public Integer clock;
-	public Collection<String> dest;
-	public String gSource;
 	public long start;
 	
 	@Deprecated
@@ -34,18 +32,14 @@ public class WanAMCastMessage extends UMessage {
 	}
 	
 	public WanAMCastMessage(Serializable s, Collection<String> dest, String gSource, int swidSource){
-		super(s,swidSource);
+		super(s,dest,gSource,swidSource);
 		this.clock = -1;
-		this.dest=dest;
-		this.gSource = gSource;
 		this.start = System.currentTimeMillis();
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {
 		 super.writeExternal(out);
 		 out.writeObject(clock);
-		 out.writeObject(dest);
-		 out.writeObject(gSource);
 		 out.writeLong(start);
 	}
 		 
@@ -53,8 +47,6 @@ public class WanAMCastMessage extends UMessage {
 	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 		super.readExternal(in);
 		clock = (Integer)in.readObject();
-		dest = (Collection<String>)in.readObject();
-		gSource = (String)in.readObject();
 		start = in.readLong();
 	}
 		

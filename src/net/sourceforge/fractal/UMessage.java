@@ -30,7 +30,7 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
  * @author P.Sutra
  *
  */
-public class UMessage extends Message implements Cloneable, Comparable<UMessage>{
+public class UMessage extends Message implements Comparable<UMessage>{
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 

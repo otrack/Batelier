@@ -159,22 +159,22 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	//
 	// Nodes management
 	//
-	
+
 	// FIXME: ugly and non-synchronized.
 	public int getRandom() {
 		return swid2ip.keySet().toArray(new Integer[0])[random.nextInt(swid2ip.keySet().size())];
 	}
 	
-	public synchronized Set<Integer> allNodes(){
-		return new HashSet<Integer>(swid2ip.keySet());
+	public Set<Integer> allNodes(){
+		return swid2ip.keySet();
 	}
 	
 	public synchronized boolean putNode(Integer swid, String ip) {
 		
 		if(ConstantPool.MEMBERSHIP_DL>1)
-			System.out.println(this+" put node "+swid+" ("+ip+","+swid2ip.containsKey(swid)+")");
+			System.out.println(this+" put node "+swid+" ("+ip+","+contains(swid)+")");
 		
-    	if( swid2ip.containsKey(swid))  return false;
+    	if(contains(swid))  return false;
 				
 		membership.addNode(swid, ip);
 		

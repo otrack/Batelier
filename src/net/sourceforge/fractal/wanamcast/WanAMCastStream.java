@@ -36,9 +36,8 @@ import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
 public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 	private ValueRecorder aDeliveredSize;
-	private ValueRecorder consensusDeliveredSize;
 	private ValueRecorder stagesSize;
-	private TimeRecorder averageConsensusLatency;
+	private TimeRecorder consensusLatency, coreLoopLatency, sideLoopLatency;
 	private Map<WanAMCastMessage,Long> convoyEffectTracker;
 	private FloatValueRecorder convoyEffect;
 	private ValueRecorder checksum;
@@ -56,7 +55,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	private int K;
 
 	private BlockingQueue<WanAMCastMessage> intraGroupChannel;
-	private HashSet<WanAMCastMessage> consensusDelivered;
 	private Collection<WanAMCastMessage> aDelivered; // Does not contain msg with dest={myGroup.name()}
 	
 	Thread mainThread;
@@ -83,7 +81,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		this.paxosStream = paxos;
 
 		this.intraGroupChannel =  CollectionUtils.newBlockingQueue();
-		this.consensusDelivered = new HashSet<WanAMCastMessage>();
 		
 		this.aDelivered = CollectionUtils.newBoundedSet(5000);
 //		aDelivered = CollectionUtils.newBoundedSet(
@@ -111,21 +108,22 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		if(ConstantPool.WANAMCAST_DL>0){
 			aDeliveredSize = new ValueRecorder(this+"#aDeliveredSize");
 			aDeliveredSize.setFormat("%M");
-			consensusDeliveredSize = new ValueRecorder(this+"#consensusDeliveredSize");
-			consensusDeliveredSize.setFormat("%M");
 			stagesSize = new ValueRecorder(this+"#stagesSize");
 			stagesSize.setFormat("%M");
-			averageConsensusLatency = new TimeRecorder(this+"#averageConsensusLatency");
-			averageConsensusLatency.setFormat("%a");
+			consensusLatency = new TimeRecorder(this+"#consensusLatency(ms)");
+			consensusLatency.setFormat("%a");
+			coreLoopLatency =  new TimeRecorder(this+"#coreLoopLatency(ms)");
+			coreLoopLatency.setFormat("%a");
+			sideLoopLatency =  new TimeRecorder(this+"#sideLoopLatency(ms)");
+			sideLoopLatency.setFormat("%a");
 			checksum = new ValueRecorder(this+"#checksum");
 			checksum.setFormat("%t");
 			convoyEffectTracker = new HashMap<WanAMCastMessage, Long>();
-			convoyEffect = new FloatValueRecorder(this+"#convoyEffect");
+			convoyEffect = new FloatValueRecorder(this+"#convoyEffect(ms)");
 			convoyEffect.setFormat("%a");
-			latency = new FloatValueRecorder(this+"#latency");
+			latency = new FloatValueRecorder(this+"#latency(ms)");
 			latency.setFormat("%a");
 		}
-
 		
 	}
 
@@ -147,75 +145,72 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				if(ConstantPool.WANAMCAST_DL > 6)
 					System.out.println(this+ " I start round "+ K);
 	
-				if(myGroup.size()>1){
-					
-					p = new ArrayList<WanAMCastMessage>();
-					
-					if( ! paxosStream.isDecided(K) ){
-						if(myGroup.isLeading(mySWid)){
-							p.add(intraGroupChannel.take());
-							if(ConstantPool.WANAMCAST_DL>0 ) averageConsensusLatency.start();
-							synchronized(this){
-								while( (msg=intraGroupChannel.poll()) != null){
-									if( !aDelivered.contains(msg)
-											&&
-											( ! consensusDelivered.contains(msg.getUniqueId()) || stages.get(msg) == 2 ))
-										p.add(msg);
-								}
-							}
-							if(ConstantPool.WANAMCAST_DL > 6)
-								System.out.println(this+" I propose instance " + K + "; messages "+ p);
-							paxosStream.propose(p,K);
-							intraGroupChannel.addAll(p);
-						}
-
-					}else{
-						if(ConstantPool.WANAMCAST_DL>0 ) averageConsensusLatency.start();
-					}
-					
-					d = (ArrayList<WanAMCastMessage>)paxosStream.decide(K);
-					if(ConstantPool.WANAMCAST_DL>0 ) averageConsensusLatency.stop();
-					intraGroupChannel.removeAll(d);
-					
-				}else{
+				if(myGroup.size()==1){ // Optimization 
+				
 					d = new ArrayList<WanAMCastMessage>();
 					d.add(intraGroupChannel.take());
 					intraGroupChannel.drainTo(d);
+				
+				}else{
+										
+					// FIXME
+					
+					if( ! paxosStream.isDecided(K) && myGroup.isLeading(mySWid) ){
+
+						// 1 - Batch messages
+						p = new ArrayList<WanAMCastMessage>();
+						p.add(intraGroupChannel.take());
+						intraGroupChannel.drainTo(p);
+						
+						// 2 - Propose them to consensus
+						if(ConstantPool.WANAMCAST_DL>0 ) consensusLatency.start();
+						paxosStream.propose(p,K);
+
+						// 3 - Decide consensus
+						d = (ArrayList<WanAMCastMessage>)paxosStream.decide(K);
+						if(ConstantPool.WANAMCAST_DL>0 ) consensusLatency.stop();
+
+					}else{
+
+						if(ConstantPool.WANAMCAST_DL>0 ) consensusLatency.start();
+						d = (ArrayList<WanAMCastMessage>)paxosStream.decide(K);
+						if(ConstantPool.WANAMCAST_DL>0 ) consensusLatency.stop();
+						intraGroupChannel.removeAll(d);
+
+					}
+
 				}
-				
-				if(ConstantPool.WANAMCAST_DL > 6)
-					System.out.println(this+" I decide instance " + K);
-				
+
 				maxClock=K;
 
 				needToDeliver = false;
-				
-				synchronized(this){
-					
-					for(WanAMCastMessage m : d){
+
+				coreLoopLatency.start();
+
+				for(WanAMCastMessage m : d){
+
+					synchronized(this){
 
 						if(ConstantPool.WANAMCAST_DL > 6)
 							System.out.println(this+" Next message "+m);
-						
+
 						if( aDelivered.contains(m)) {
 							if(ConstantPool.WANAMCAST_DL > 3)
 								System.out.println(this+" I kick "+m);
 							continue;
 						}
-						
+
 						if(m.dest.size()==1){ 
-							
+
 							assert m.dest.contains(myGroup.name());
 							assert !msg2ts.containsKey(m);
-							if(ConstantPool.WANAMCAST_DL > 3)
-								System.out.println(this+" I atomic deliver "+m+" (one group)");
 							deliver(m);
-							
-//								stages.put(m, 3);
-//							 	m.clock = K;
-//								updateTimestamp(m);
-//								needToDeliver=true;		
-							
+
+							// stages.put(m, 3);
+							// m.clock = K;
+							// updateTimestamp(m);
+							// needToDeliver=true;		
+
 						}else{
 
 							if(!stages.containsKey(m))  
@@ -223,12 +218,13 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 
 							if(stages.get(m)==0){	
 								stages.put(m, 1);
-								
+
 								if(!stage1.containsKey(m)){
 									stage1.put(m, new HashMap<String,Integer>());
 								}
 								m.clock=K;
-								
+
+								// FIXME
 								if(myGroup.isLeading(mySWid)){
 									for(String g: m.dest){
 										if(!g.equals(myGroup.name())){
@@ -241,7 +237,7 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 									}
 								}
 
-							}else{ // stage 1 or 2, if it is 1, I am in late.
+							}else{ // stage 1 or 2 locally (if it is 1, I am in late)
 								stages.put(m, 3);
 								needToDeliver = true;
 								if(m.clock > maxClock) maxClock = m.clock;
@@ -250,27 +246,20 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 							stage1.get(m).put(myGroup.name(), m.clock);	
 							updateTimestamp(m);
 							needToDeliver |= testEndGathering(m);
-							
-							// consensusDelivered can already contain m.getUniqueId(), if m is in stage 2
-							consensusDelivered.add(m);
+
 						}
-						
-						if (ConstantPool.WANAMCAST_DL>0)
-							consensusDeliveredSize.add(consensusDelivered.size());
 
+					} // end synchronized
 
-					} // end for 					
-					
-					
-					if(needToDeliver) 
-						testDeliver();
-					
-					if(ConstantPool.WANAMCAST_DL > 6)
-						System.out.println(this+" I set the clock to "+ (maxClock+1));
-					
-					K = maxClock+1 ;
-				
-				} // end synchronized
+				} // end for
+
+				if(needToDeliver) 
+					testDeliver();
+
+				if(ConstantPool.WANAMCAST_DL > 6)
+					System.out.println(this+" I set the clock to "+ (maxClock+1));
+
+				K = maxClock+1 ;
 
 				// We send to others
 				if(myGroup.isLeading(mySWid)){
@@ -285,6 +274,9 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 					}
 					toSend.clear();
 				}
+
+				coreLoopLatency.stop();	
+				
 			}catch(Exception e){
 				e.printStackTrace();
 			}
@@ -293,12 +285,8 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	}
 	
 	/** 
-	 * Atomic message a message to the set of destination groups.
-	 * Notice that this primitive ensures both atomicity and causality.
-	 * Moreover, by default, it relives on the fact that 
-	 * if amcast(m) happens-before amcast(m') then 
-	 * amdeliver(m) happens-before amdeliver(m').
-	 * In other words, the client using amcast should behave sequentially.
+	 * Atomic multicast a message to the set of destination groups.
+	 * This primitive ensures both atomicity and causality.
 	 * 
 	 * @param m the message to send.
 	 */
@@ -314,11 +302,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						myGroup.name(),
 						mySWid)
 				);
-	}
-
-	@Deprecated
-	public void atomicMulticast(Serializable s, HashSet<String> dest){
-		atomicMulticast(new WanAMCastMessage(s,dest,myGroup.name(), mySWid));
 	}
 
 	public void start(){
@@ -339,27 +322,30 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 	
 	@SuppressWarnings("unchecked")
 	public void learn(Stream s, Serializable value) {
+		
 		MulticastMessage n = (MulticastMessage)value;
 		ArrayList<WanAMCastMessage> msgs = (ArrayList<WanAMCastMessage>)n.serializable;
 		
 		if(ConstantPool.WANAMCAST_DL > 3){
 			System.out.println(this+" I RM-deliver "+ msgs );	
 		}
+
+		sideLoopLatency.start();
 		
-		synchronized(this){
+		for(WanAMCastMessage m : msgs){
 
-			for(WanAMCastMessage m : msgs){
+			assert(m.dest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.dest;
+			assert(!m.gSource.equals(myGroup.name()) || myGroup.contains(m.source)) : m+" "+m.source;
 
-				assert(m.dest.contains(myGroup.name())) : myGroup.name() + " vs "+ m.dest;
-				assert(!m.gSource.equals(myGroup.name()) || myGroup.contains(m.source)) : m+" "+m.source;
-				
+			synchronized(this){
+
 				if( aDelivered.contains(m) ) {
 					if(ConstantPool.WANAMCAST_DL > 3)
 						System.out.println(this+" I kick "+m);
 					continue;
 				}
-													
-				if( !stages.keySet().contains(m)){
+
+				if( !stages.containsKey(m)){
 					stages.put(m,0);
 					try {
 						intraGroupChannel.put(m);
@@ -367,20 +353,22 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 						e.printStackTrace();
 					}						
 				}
-				
+
 				if( m.clock!=-1 ){
 					if(!stage1.containsKey(m)) 
 						stage1.put(m, new HashMap<String,Integer>());
 					stage1.get(m).put(m.gSource, m.clock);
 					testEndGathering(m);
 				}
-					
+
 			}
 
-		}
+		} // end for
 		
+		sideLoopLatency.stop();
+
 	}
-	
+
 	public boolean isClean(){
 		return stages.isEmpty() && msg2ts.isEmpty() && ts2msg.isEmpty() && intraGroupChannel.isEmpty();
 	}
@@ -415,18 +403,18 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			if(ConstantPool.WANAMCAST_DL > 0)
 				System.out.println(this+" got a "+ m.getMessageType() +" to nobody");
 		}
-		
-		// Cleaning
-		aDelivered.add(m);
-		intraGroupChannel.remove(m);
-		consensusDelivered.remove(m);
-		stages.remove(m);
-		stage1.remove(m); 
-		if(msg2ts.containsKey(m)){
-			ts2msg.remove(msg2ts.get(m));
-			msg2ts.remove(m);
+	
+		synchronized(this){
+			aDelivered.add(m);
+			intraGroupChannel.remove(m);
+			stages.remove(m);
+			stage1.remove(m); 
+			if(msg2ts.containsKey(m)){
+				ts2msg.remove(msg2ts.get(m));
+				msg2ts.remove(m);
+			}
 		}
-		
+			
 		// Performance tracking
 		if(ConstantPool.WANAMCAST_DL>0){ 
 			aDeliveredSize.add(aDelivered.size());
@@ -450,14 +438,14 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 			stagesSize.add(ts2msg.keySet().size());
 			stagesSize.add(msg2ts.keySet().size());
 		}
+
+		if(ConstantPool.WANAMCAST_DL > 3)
+			System.out.println(this+" Smallest ts ="+ts2msg.keySet().iterator().next());
+					
+		List<WanAMCastMessage> previous = new ArrayList<WanAMCastMessage>(ts2msg.size());
+		List<WanAMCastMessage> toDeliver = new ArrayList<WanAMCastMessage>(ts2msg.size());
 		
 		synchronized(this){
-
-			if(ConstantPool.WANAMCAST_DL > 3)
-				System.out.println(this+" Smallest ts ="+ts2msg.keySet().iterator().next());
-						
-			List<WanAMCastMessage> previous = new ArrayList<WanAMCastMessage>(ts2msg.size());
-			List<WanAMCastMessage> toDeliver = new ArrayList<WanAMCastMessage>(ts2msg.size());
 			
 			for(Timestamp ts : ts2msg.keySet()){
 				
@@ -489,11 +477,10 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 				
 			}	
 			
-			for(WanAMCastMessage msg : toDeliver){
-				deliver(msg);
-			}
-			
-
+		}
+		
+		for(WanAMCastMessage msg : toDeliver){
+			deliver(msg);
 		}
 	}
 
@@ -517,11 +504,6 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 	}
 
-	/**
-	 * 
-	 * @param msg
-	 * @return true iff the stage in which msg is changes
-	 */
 	private boolean testEndGathering(WanAMCastMessage msg){
 		
 		Integer maxGroupClock = 0;
@@ -538,13 +520,12 @@ public class WanAMCastStream extends Stream implements Runnable, Learner{
 		}
 
 		if( stages.get(msg)==1 ) {
-			WanAMCastMessage m = (WanAMCastMessage)msg.clone(); // FIXME
-			m.clock = maxGroupClock;
+			msg.clock = maxGroupClock;
 			if(ConstantPool.WANAMCAST_DL > 3)
-				System.out.println(this+" "+m+": stage 1 -> stage 2");
-			stages.put(m, 2);
+				System.out.println(this+" "+msg+": stage 1 -> stage 2");
+			stages.put(msg, 2);
 			try {
-				intraGroupChannel.put(m);
+				intraGroupChannel.put(msg);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}

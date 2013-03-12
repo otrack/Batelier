@@ -23,7 +23,7 @@ import net.sourceforge.fractal.UMessage;
 */
 
 	
-public class MulticastMessage extends UMessage implements Cloneable{
+public class MulticastMessage extends UMessage{
 	
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	
@@ -45,14 +45,6 @@ public class MulticastMessage extends UMessage implements Cloneable{
 	
 	public Collection<String> getDest(){
 		return dest;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public Object clone(){
-		MulticastMessage m = (MulticastMessage)super.clone();
-		m.dest = new HashSet<String>(this.dest);
-		m.gSource = this.gSource;
-		return m;
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {
