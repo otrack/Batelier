@@ -90,7 +90,7 @@ public class GPAcceptor extends MutedStream implements Runnable{
 		lastBallot = 0;
 		lastCStructAccepted = stream.cstructFactory().newCStruct();
 		
-		ballotArray = new BallotArray(s.cstructFactory(),agroup.members(),useFastBallot,recovery);
+		ballotArray = new BallotArray(s.cstructFactory(),agroup.allNodes(),useFastBallot,recovery);
 		
 		checkpoints = new LinkedHashMap<Integer, LinkedHashSet<Command>>(3, 0.75f, true) {
 			private static final long serialVersionUID = 1L;

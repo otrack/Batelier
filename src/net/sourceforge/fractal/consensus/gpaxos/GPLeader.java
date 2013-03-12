@@ -99,7 +99,7 @@ public class GPLeader extends MutedStream implements Runnable{
 		highestBallotSeen = 0;
 		maxTried = null;
 		quorum1B = new HashSet<Integer>();
-		ballotArray = new BallotArray(stream.cstructFactory(), agroup.members(), useFastBallot, recovery);
+		ballotArray = new BallotArray(stream.cstructFactory(), agroup.allNodes(), useFastBallot, recovery);
 		
 		nextCheckpointNumber = 0;
 		checkpointSize=chkSize;

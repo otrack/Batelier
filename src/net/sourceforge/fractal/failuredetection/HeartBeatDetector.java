@@ -26,7 +26,7 @@ public class HeartBeatDetector {
 
 	public HeartBeatDetector(Group g, int p){
 
-		heardOf = new HashSet<Integer>(g.members());
+		heardOf = new HashSet<Integer>(g.allNodes());
 		
 		period = p;
 		timer = new Timer();

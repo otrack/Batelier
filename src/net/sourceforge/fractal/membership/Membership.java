@@ -121,25 +121,41 @@ public class Membership {
     }
 
     public UDPGroup getOrCreateUDPGroup(String name, String ip, int port)  throws IllegalArgumentException {
+
+    	if(ConstantPool.MEMBERSHIP_DL>1)
+    		System.out.println(this+" creating udp group named "+name);
+    	
     	if(allGroups.containsKey(name) && !(allGroups.get(name) instanceof UDPGroup))
     		throw new IllegalArgumentException("A group of the same name but wrong type exists");   
+    	
     	if(allGroups.containsKey(name))
     		return (UDPGroup) allGroups.get(name);
+    	
     	UDPGroup ret = new UDPGroup(this,name,ip, port);
     	allGroups.put(name, ret);
     	return ret;
     }
 
     public NettyGroup getOrCreateNettyGroup(String name, int port)  throws IllegalArgumentException {
+    	return getOrCreateNettyGroup(name, port, false);
+    }
+
+    public NettyGroup getOrCreateNettyGroup(String name, int port, boolean isDynamic)  throws IllegalArgumentException {
+
+    	if(ConstantPool.MEMBERSHIP_DL>1)
+    		System.out.println(this+" creating Netty "+(isDynamic ? "dynamic": "") +" group named "+name);
+    	
     	if(allGroups.containsKey(name) && !(allGroups.get(name) instanceof TCPGroup))
     		throw new IllegalArgumentException("A group of the same name but wrong type exists");    	
+    	
     	if(allGroups.containsKey(name))
     		return (NettyGroup) allGroups.get(name);
-    	NettyGroup ret = new NettyGroup(this,name,port);
+    	
+    	NettyGroup ret = new NettyGroup(this,name,port,isDynamic);
     	allGroups.put(name,ret);
     	return ret;
     }
-
+    
     public Collection<Group> allGroups(){
     	return allGroups.values();
     }
@@ -211,7 +227,7 @@ public class Membership {
 		int j=0;
 		for(int i=0; i<peers.size(); i++){
 			if(i%size==0){
-				g = getOrCreateTCPGroup(prefix+String.valueOf(j++),port);
+				g = getOrCreateNettyGroup(prefix+String.valueOf(j++),port);
 				ret.add(g);
 			}
 			int p = peers.get(i);
@@ -441,7 +457,7 @@ public class Membership {
     //
     
     public String toString(){
-    	return "Membership";
+    	return "Membership"+ ((ConstantPool.MEMBERSHIP_DL > 3) ? "@"+myId() : "");
     }
     
 }

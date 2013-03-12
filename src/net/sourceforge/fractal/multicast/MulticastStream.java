@@ -109,11 +109,10 @@ public final class MulticastStream extends Stream implements Learner {
 			if(ConstantPool.MULTICAST_DL > 1 )
 				System.out.println(this+" multicast "+ m+" to "+m.getDest());
 			
-			ByteBuffer bb = Message.pack(m, membership.myId());
 			for(String g : m.getDest()){
 				if(membership.group(g)==null)
 					throw new IllegalArgumentException("Group "+g+" does not exist.");
-				membership.group(g).broadcast(bb);
+				membership.group(g).broadcast(m);
 			}
 			
 		}

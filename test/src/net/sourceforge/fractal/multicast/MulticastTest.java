@@ -20,8 +20,8 @@ import org.junit.Test;
 
 public class MulticastTest {
 	
-	private static final int nnodes=9;
-	private static final int ngroups=3;
+	private static final int nnodes=2;
+	private static final int ngroups=2;
 
 	private static Map<Node,Membership> network;
 	private static Map<Node,MulticastStream> streams;
@@ -64,7 +64,7 @@ public class MulticastTest {
 				// Check it was received
 				for(String name: dst){
 					Group g = network.get(n).group(name);
-					for(int swid: g.members()){	
+					for(int swid: g.allNodes()){	
 						MulticastMessage m = null; 
 						try {
 							m = learners.get(swid).q.take();

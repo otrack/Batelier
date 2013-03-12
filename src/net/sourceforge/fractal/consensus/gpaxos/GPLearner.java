@@ -57,7 +57,7 @@ public class GPLearner extends Stream implements Runnable{
 		msgQueue =  CollectionUtils.newBlockingQueue();
 		GPLearnerThread = new Thread(this,"GPLearnerThread@"+swid);
 		
-		ballotArray = new BallotArray(stream.cstructFactory(), agroup.members(), useFastBallot, recovery);
+		ballotArray = new BallotArray(stream.cstructFactory(), agroup.allNodes(), useFastBallot, recovery);
 		
 		lgroup.registerQueue("GPMessage2BStart", msgQueue);
 		lgroup.registerQueue("GPMessage2BClassic", msgQueue);

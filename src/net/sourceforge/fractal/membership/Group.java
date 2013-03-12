@@ -36,18 +36,17 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	protected Membership membership;
 	protected String name;
 	protected int port;
-	protected boolean joined;
 	
 	protected Map<Integer,InetSocketAddress> swid2ip;	//Group wide to ip map
 	protected Map<String,Set<BlockingQueue<Message>>> type2QueueSet;
 	protected Map<String, Set<Learner>> learners;
 
 	private Random random=new Random(System.currentTimeMillis());
+	
 	public Group(Membership m, String n, int p) {
 		membership = m;
 		name = n;
 		port = p;
-		joined = false;
 		
 		swid2ip = new TreeMap<Integer, InetSocketAddress>();
 		
@@ -136,7 +135,7 @@ public abstract class Group extends Stream implements Comparable<Group>{
 		boolean isDelivered = false;
 		
 		if(ConstantPool.MEMBERSHIP_DL > 6)
-			System.out.println(this +"  got "+m+" of type " + m.getMessageType() + " from "+ m.source);
+			System.out.println(this +" got "+m+" of type " + m.getMessageType() + " from "+ m.source);
 		
 		if(rcvs != null && ! rcvs.isEmpty()){			
 			for(BlockingQueue<Message> rcv : rcvs){
@@ -153,7 +152,7 @@ public abstract class Group extends Stream implements Comparable<Group>{
 		}
 		
 		if(!isDelivered)
-			System.out.println(this+" got  a "+m.getMessageType()+"  fornobody");
+			System.out.println(this+" got a "+m.getMessageType()+" for nobody");
 		
 	}
 
@@ -161,21 +160,26 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	// Nodes management
 	//
 	
+	// FIXME: ugly and non-synchronized.
+	public int getRandom() {
+		return swid2ip.keySet().toArray(new Integer[0])[random.nextInt(swid2ip.keySet().size())];
+	}
+	
+	public synchronized Set<Integer> allNodes(){
+		return new HashSet<Integer>(swid2ip.keySet());
+	}
+	
 	public synchronized boolean putNode(Integer swid, String ip) {
-			
-    	if( swid2ip.containsKey(swid))  return false;
 		
 		if(ConstantPool.MEMBERSHIP_DL>1)
-			System.out.println(this+" put node "+swid+"("+ip+")");
+			System.out.println(this+" put node "+swid+" ("+ip+","+swid2ip.containsKey(swid)+")");
 		
+    	if( swid2ip.containsKey(swid))  return false;
+				
 		membership.addNode(swid, ip);
 		
 		InetSocketAddress localAddress = new InetSocketAddress(ip, port);
 		swid2ip.put(swid, localAddress);
-		if(! joined && membership.myId() == swid){
-			joinGroup();
-			joined = true;
-		}
 		return true;
 	}
 	
@@ -185,9 +189,7 @@ public abstract class Group extends Stream implements Comparable<Group>{
 			System.out.println(this+" remove node "+swid);
 		
 		if(!swid2ip.containsKey(swid)) return false;
-		
-		if( joined && membership.myId() == swid) return false;
-		
+				
 		swid2ip.remove(swid);
 		membership.removeNode(swid);
 
@@ -198,7 +200,8 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	public synchronized boolean putNodes(Collection<Integer> nodes){
 		boolean ret = false;
 		for(int swid : nodes){
-			if(! membership.allNodes().contains(swid)) throw new IllegalArgumentException("node "+swid+" does not exist");
+			if(! membership.allNodes().contains(swid)) 
+				throw new IllegalArgumentException("node "+swid+" does not exist");
 			ret |= putNode(swid, membership.adressOf(swid));
 		}
 		return ret;
@@ -215,14 +218,6 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	 */
 	public int get(int i) {
 		return swid2ip.keySet().toArray(new Integer[0])[i];
-	}
-
-	public int getRandom() {
-		return swid2ip.keySet().toArray(new Integer[0])[random.nextInt(swid2ip.keySet().size())];
-	}
-	
-	public Set<Integer> members(){
-		return swid2ip.keySet();
 	}
 
 	public int size() {

@@ -20,7 +20,7 @@ public class MembershipTest {
 	public static void init(){
 		network = DummyNetwork.create(3);
 		for(Node n : network.keySet()){
-			Group g = network.get(n).getOrCreateTCPDynamicGroup("allnodes", 4488);
+			Group g = network.get(n).getOrCreateNettyGroup("allnodes", 4488, true);
 			g.putNode(n.id, n.ip);
 			g.start();
 		}
@@ -33,7 +33,7 @@ public class MembershipTest {
 	}
 	
 	@Test
-	public void testTCPDynamicGroup(){
+	public void testDynamicGroup(){
 	
 		Node n = network.keySet().iterator().next();
 		Membership m = network.get(n);
