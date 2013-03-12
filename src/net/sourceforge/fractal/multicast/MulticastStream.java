@@ -22,7 +22,6 @@ file attached to it to see how you can use it, edit or distributed.
  */
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import net.sourceforge.fractal.ConstantPool;

@@ -119,7 +119,7 @@ public class WanAMCastTest {
 						Integer g = rnd.nextInt(ngroups);
 						dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[g]).name());
 					}
-					msg = new WanAMCastMessage(new Byte[50],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
+					msg = new WanAMCastMessage(new Byte[10],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
 				}else{
 					dst.addAll(network.get(n).allGroupNames());
 					msg = new WanAMCastMessage(null,dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
