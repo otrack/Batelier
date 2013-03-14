@@ -34,7 +34,7 @@ import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
 */ 
 
 
-public class Message implements Messageable,Cloneable{
+public class Message implements Messageable, Cloneable{
 	
     private static final long serialVersionUID = Messageable.FRACTAL_MID;
     private static ValueRecorder packProcessingTime;
@@ -69,17 +69,14 @@ public class Message implements Messageable,Cloneable{
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(source);
     }
-    
-    public Object clone(){
-    	Message m=null;
-		try {
-			m = (Message)super.clone();
-		} catch (CloneNotSupportedException e) {
-			e.printStackTrace();
-		}
+        
+    @Override
+    public Object clone() throws CloneNotSupportedException{
+    	Message m = (Message) super.clone();
     	m.source = this.source;
     	return m;
     }
+    
     
     //
     // CLASS INTERFACE

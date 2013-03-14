@@ -16,7 +16,7 @@ import net.sourceforge.fractal.Messageable;
 * 
 */ 
 
-class PMPhase1A extends PMessage implements Cloneable{
+class PMPhase1A extends PMessage {
 	
     private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
@@ -49,10 +49,4 @@ class PMPhase1A extends PMessage implements Cloneable{
         out.writeInt(proposerId);
     }
     
-    public Object clone(){
-    	PMPhase1A m = (PMPhase1A)super.clone();
-    	m.timestamp= this.timestamp;
-    	m.proposerId = this.proposerId;
-    	return m;
-    }
 }

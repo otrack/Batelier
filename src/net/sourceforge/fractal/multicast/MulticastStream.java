@@ -56,7 +56,8 @@ public final class MulticastStream extends Stream implements Learner {
 		@Override
 		public boolean registerLearner(String msgType, Learner learner){
 			
-			if(ConstantPool.MULTICAST_DL > 0) 	System.out.println(this+" register learner for "+msgType);
+			if(ConstantPool.MULTICAST_DL > 0)
+				System.out.println(this+" register learner for "+msgType);
 			
 			if(super.registerLearner(msgType, learner)){
 				group.registerLearner(msgType, this);
@@ -96,8 +97,8 @@ public final class MulticastStream extends Stream implements Learner {
 		}
 				
 		public void multicast(Serializable s, Collection<String> dest){
-			if(isTerminated)	throw new IllegalStateException("stream stopped");
-			
+			if(isTerminated)
+				throw new IllegalStateException("stream stopped");
 			multicast(new MulticastMessage(s,dest,group.name(),membership.myId()));
 		}
 

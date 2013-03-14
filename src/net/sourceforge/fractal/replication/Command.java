@@ -13,7 +13,7 @@ import net.sourceforge.fractal.Messageable;
  * @author Pierre Sutra
  *
  * It exists a total order over the set of commands such that 
- * if c.source== d.source && c > d, then c.source delivered cbefore proposing d.
+ * if c.source== d.source && c > d, then c.source delivered c before proposing d.
  * 
  * If the application does not follows this, some commands might never be 
  * delivered. 

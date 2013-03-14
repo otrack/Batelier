@@ -17,14 +17,8 @@ package net.sourceforge.fractal.wanamcast;
 
 import java.util.Map;
 
-import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.utils.CollectionUtils;
-import net.sourceforge.fractal.utils.FractalUtils;
-import net.sourceforge.fractal.utils.XMLUtils;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 
 public class WanAMCastStreamManager {
@@ -35,44 +29,22 @@ public class WanAMCastStreamManager {
 		streams = CollectionUtils.newMap();
 	}
 
-	public void load(Node config){	
-
-		String range = XMLUtils.getAttribByName((Element) config, "instantiate");
-
-		if(FractalUtils.inRange(range,FractalManager.getInstance().membership.myId())){
-			String streamName,consensusName, rmcastName, groupName;
-
-			streamName = XMLUtils.getAttribByName((Element) config, "name");		
-			consensusName = String.valueOf(XMLUtils.getAttribByName((Element) config, "consensusName"));
-			rmcastName = String.valueOf(XMLUtils.getAttribByName((Element) config, "rmcastName"));
-			groupName = String.valueOf(XMLUtils.getAttribByName((Element) config, "group"));
-			streams.put(streamName, new WanAMCastStream(
-					FractalManager.getInstance().membership.myId(),
-					FractalManager.getInstance().membership.group(groupName),
-					streamName,
-					FractalManager.getInstance().multicast.stream(rmcastName),
-					FractalManager.getInstance().paxos.stream(consensusName)));
-			if(ConstantPool.MULTICAST_DL > 0) System.out.println("Started AMCast stream " + streamName + " on id " + FractalManager.getInstance().membership.myId());
-		}
-	}
-
 	public WanAMCastStream getOrCreateWanAMCastStream(
+			FractalManager manager,
 			String streamName,
 			String groupName, 
 			String rmcastName,
-			String rbcastName,
-			String consensusName){
+			String rbcastName){
 
 		if(streams.get(streamName)!=null){
 			return streams.get(streamName);
 		}
 
 		WanAMCastStream stream = new WanAMCastStream(
-				FractalManager.getInstance().membership.myId(),
-				FractalManager.getInstance().membership.group(groupName),
+				manager.membership.myId(),
+				manager.membership.group(groupName),
 				streamName,
-				FractalManager.getInstance().multicast.stream(rmcastName),
-				FractalManager.getInstance().paxos.stream(consensusName));
+				manager.multicast.stream(rmcastName));
 		streams.put(streamName,stream);
 		return stream;
 	}

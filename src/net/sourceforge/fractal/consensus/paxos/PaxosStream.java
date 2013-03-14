@@ -21,6 +21,7 @@ import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.Message;
 import net.sourceforge.fractal.consensus.Consensus;
 import net.sourceforge.fractal.consensus.ConsensusLearner;
+import net.sourceforge.fractal.membership.Group;
 import net.sourceforge.fractal.membership.Membership;
 import net.sourceforge.fractal.utils.CollectionUtils;
 import net.sourceforge.fractal.utils.Pair;
@@ -65,9 +66,9 @@ public final class PaxosStream implements Consensus, Runnable {
 
 	private BlockingQueue<Message> delivered;
 
-	String ACC_GRP;
-	String PRP_GRP;
-	String LRN_GRP;
+	Group ACC_GRP;
+	Group PRP_GRP;
+	Group LRN_GRP;
 
 	private Thread[] myThreads;
 
@@ -88,45 +89,45 @@ public final class PaxosStream implements Consensus, Runnable {
 			String stream_name,
 			int swid,
 			String coordPolicyName,
-			String acc_grp_name,
-			String prp_grp_name,
-			String lrn_grp_name,
+			Group accp,
+			Group prp,
+			Group lrn,
 			Membership m
 		) {
 		
 		sw_id = swid;
 		streamName = stream_name;
 		membership = m;
-		ACC_GRP = acc_grp_name;
-		PRP_GRP = prp_grp_name;
-		LRN_GRP = lrn_grp_name;
+		ACC_GRP = accp;
+		PRP_GRP = prp;
+		LRN_GRP = lrn;
 		
 
 		delivered = CollectionUtils.newIdBlockingQueue("SWID=" + sw_id);
 
-		if (membership.group(PRP_GRP).contains(sw_id)) {
+		if (PRP_GRP.contains(sw_id)) {
 			prp_id = sw_id;
-			membership.group(PRP_GRP).registerQueue(new PMBroadcast().getMessageType(), delivered);
-			membership.group(PRP_GRP).registerQueue(new PMPhase1B().getMessageType(), delivered);
-			membership.group(PRP_GRP).registerQueue(new PMNACK().getMessageType(), delivered);
+			PRP_GRP.registerQueue(new PMBroadcast().getMessageType(), delivered);
+			PRP_GRP.registerQueue(new PMPhase1B().getMessageType(), delivered);
+			PRP_GRP.registerQueue(new PMNACK().getMessageType(), delivered);
 		}
 
-		if (membership.group(ACC_GRP).contains(sw_id)) {
+		if (ACC_GRP.contains(sw_id)) {
 			acc_id = sw_id;
-			membership.group(ACC_GRP).registerQueue(new PMPhase1A().getMessageType(), delivered);
-			membership.group(ACC_GRP).registerQueue(new PMPhase2A().getMessageType(), delivered);
-			membership.group(ACC_GRP).registerQueue(new PMLogRequest().getMessageType(), delivered);
+			ACC_GRP.registerQueue(new PMPhase1A().getMessageType(), delivered);
+			ACC_GRP.registerQueue(new PMPhase2A().getMessageType(), delivered);
+			ACC_GRP.registerQueue(new PMLogRequest().getMessageType(), delivered);
 		}
 
-		if (membership.group(LRN_GRP).contains(sw_id)) {
+		if (LRN_GRP.contains(sw_id)) {
 			lrn_id = sw_id;
-			membership.group(LRN_GRP).registerQueue(new PMPhase2B().getMessageType(), delivered);
-			membership.group(LRN_GRP).registerQueue(new PMDecision().getMessageType(), delivered);
+			LRN_GRP.registerQueue(new PMPhase2B().getMessageType(), delivered);
+			LRN_GRP.registerQueue(new PMDecision().getMessageType(), delivered);
 		}
 
-		n_acc = membership.group(ACC_GRP).size();
-		n_prp = membership.group(PRP_GRP).size();
-		n_lrn = membership.group(LRN_GRP).size();
+		n_acc = ACC_GRP.size();
+		n_prp = PRP_GRP.size();
+		n_lrn = LRN_GRP.size();
 		quorum_size = n_acc / 2 + 1;
 		// FIXME: this.fast_quorum_size = ?;
 
@@ -182,11 +183,11 @@ public final class PaxosStream implements Consensus, Runnable {
 
 		// Send to the leader.
 		if (ConstantPool.PAXOS_USE_UNICAST)
-			membership.group(PRP_GRP).unicast(
-					membership.group(PRP_GRP).leader(),
+			PRP_GRP.unicast(
+					PRP_GRP.leader(),
 					new PMBroadcast(streamName, inst, value, sw_id));
 		else
-			membership.group(PRP_GRP).broadcast(
+			PRP_GRP.broadcast(
 					new PMBroadcast(streamName, inst, value, sw_id));
 	}
 
@@ -259,48 +260,6 @@ public final class PaxosStream implements Consensus, Runnable {
 				debug(":" + rcvMsg.instance + " received "
 						+ rcvMsg.getMessageType() + " with value : " + rcvMsg+" from "+rcvMsg.source);
 
-			// If it is a log request
-			if (rcvMsg.type == PMessage.LOGREQUEST) {
-				PMLogRequest lrm = (PMLogRequest) rcvMsg;
-				if (lrm.usedAcc[acc_id])
-					continue;
-
-				// Connect to the requester to be sure I am not wasting my time.
-				Socket logSocket = null;
-
-				try {
-					logSocket = new Socket(lrm.rmAddress, lrm.port);
-					ObjectOutput out = new ObjectOutputStream(
-							new BufferedOutputStream(logSocket
-									.getOutputStream()));
-					out.writeInt(acc_id);
-
-					// FIXME: Send the database image and merge logs in
-					// parallel.
-
-					LogEntry[][] vv_entries = lrm.filter.filter(FractalManager.getInstance(), sw_id);
-
-					if (ConstantPool.PAXOS_DL > 2)
-						System.out.println("Paxos sending " + vv_entries.length
-								+ " sets of entries");
-
-					out.writeInt(vv_entries.length);
-					for (int d1 = 0; d1 < vv_entries.length; d1++) {
-						out.writeInt(vv_entries[d1].length);
-						for (int d2 = 0; d2 < vv_entries[d1].length; d2++) {
-							out.writeObject(vv_entries[d1][d2]);
-						}
-					}
-
-					out.flush();
-					out.close();
-					logSocket.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				continue;
-			}
-
 			// Get the instance keeper.
 			instanceKeeper = getInstance(rcvMsg.instance, true);
 
@@ -311,7 +270,7 @@ public final class PaxosStream implements Consensus, Runnable {
 				case PMessage.BROADCAST: {
 					
 					// FIXME : Ignored when we have reliable links
-					//					loader.membership.group(LRN_GRP).unicastSW(
+					//					loader.LRN_GRP.unicastSW(
 					//					rcvMsg.source,
 					//					new PMDecision(this.streamName, rcvMsg.instance,
 					//					instanceKeeper.decision.iterator().next())
@@ -349,7 +308,7 @@ public final class PaxosStream implements Consensus, Runnable {
 				}
 
 				PMBroadcast bm = (PMBroadcast) rcvMsg;
-				if (membership.group(PRP_GRP).isLeading(membership.myId())) {
+				if (PRP_GRP.isLeading(membership.myId())) {
 									// Am I // FIXME !!!!!
 									// the
 									// leader?
@@ -385,7 +344,7 @@ public final class PaxosStream implements Consensus, Runnable {
 //								+ instanceKeeper.currentRound
 //								+ " Phase2A message DIRECTLY : " + m);
 
-						membership.group(ACC_GRP).broadcast(m);
+						ACC_GRP.broadcast(m);
 					} else {
 						if (ConstantPool.PAXOS_DL > 4)
 							debug(": I will execute phase1");
@@ -398,7 +357,7 @@ public final class PaxosStream implements Consensus, Runnable {
 									+ instanceKeeper.currentRound + " ==> "
 									+ ACC_GRP);
 
-						membership.group(ACC_GRP).broadcast(
+						ACC_GRP.broadcast(
 								new PMPhase1A(this.streamName,
 										instanceKeeper.instance,
 										instanceKeeper.currentRound, prp_id, sw_id));
@@ -422,15 +381,7 @@ public final class PaxosStream implements Consensus, Runnable {
 
 					instanceKeeper.h_ts_promissed = a1m.timestamp;
 
-					try {
-						instanceKeeper.logYourself();
-					} catch (IOException e) {
-						e.printStackTrace();
-						throw new RuntimeException(
-								"UNABLE TO WRITE TO LOG FILE. CRASHING TO ENSURE SAFETY!!!");
-					}
-
-					membership.group(PRP_GRP).unicast(
+					PRP_GRP.unicast(
 							a1m.getPrpId(),
 							new PMPhase1B(this.streamName,
 									instanceKeeper.instance, a1m.timestamp,
@@ -442,7 +393,7 @@ public final class PaxosStream implements Consensus, Runnable {
 								+ " ==> " + PRP_GRP + "[" + a1m.getPrpId()
 								+ "]");
 
-					membership.group(PRP_GRP).unicast(
+					PRP_GRP.unicast(
 							a1m.getPrpId(),
 							new PMNACK(this.streamName,
 									instanceKeeper.instance, a1m.timestamp,
@@ -526,7 +477,7 @@ public final class PaxosStream implements Consensus, Runnable {
 
 					//debug("Sending Phase2A AFTER PHASE 1B message : " + m);
 
-					membership.group(ACC_GRP).broadcast(m);
+					ACC_GRP.broadcast(m);
 				}
 			}
 				;
@@ -542,14 +493,6 @@ public final class PaxosStream implements Consensus, Runnable {
 					instanceKeeper.h_ts_accepted = a2m.timestamp;
 					instanceKeeper.accepted = a2m.serializable;
 
-					try {
-						instanceKeeper.logYourself();
-					} catch (IOException e) {
-						e.printStackTrace();
-						throw new RuntimeException(
-								"UNABLE TO WRITE TO LOG FILE. SAFETY VIOLATED!!!");
-					}
-
 					if (ConstantPool.PAXOS_DL > 3)
 						debug(":" + instanceKeeper.instance
 								+ " sending phase2B " + a2m.timestamp + " ==> "
@@ -559,13 +502,13 @@ public final class PaxosStream implements Consensus, Runnable {
 							instanceKeeper.instance, a2m.timestamp,
 							instanceKeeper.accepted, acc_id, sw_id);
 					//debug("Sending Phase2B message : " + m);
-					membership.group(LRN_GRP).broadcast(m);
+					LRN_GRP.broadcast(m);
 				} else {
 					if (ConstantPool.PAXOS_DL > 3)
 						debug(":" + instanceKeeper.instance + " sending NACK "
 								+ a2m.timestamp + " ==> " + PRP_GRP);
 
-					membership.group(PRP_GRP).broadcast(
+					PRP_GRP.broadcast(
 							new PMNACK(this.streamName,
 									instanceKeeper.instance, a2m.timestamp,
 									instanceKeeper.h_ts_promissed, sw_id));
@@ -620,13 +563,7 @@ public final class PaxosStream implements Consensus, Runnable {
 						if (ConstantPool.PAXOS_DL > 3)
 							debug(": " + instanceKeeper.instance
 									+ " added to notification queue");
-						
-						try {
-							instanceKeeper.logYourself();
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-						
+												
 					} else {
 						if (ConstantPool.PAXOS_DL > 3)
 							debug(": " + instanceKeeper.instance
@@ -651,16 +588,6 @@ public final class PaxosStream implements Consensus, Runnable {
 				if (ConstantPool.PAXOS_DL > 3)
 					debug(": " + instanceKeeper.instance
 							+ " added to notification queue");
-				try {
-					instanceKeeper.logYourself();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				// FIXME : same reason as above
-				//				notificationQueue.add(new Pair<Integer, Serializable>(
-				//				instanceKeeper.instance, instanceKeeper.decision
-				//				.iterator().next()));
 
 				if (ConstantPool.PAXOS_DL > 3)
 					debug(": " + instanceKeeper.instance
@@ -690,27 +617,8 @@ public final class PaxosStream implements Consensus, Runnable {
 		learners.remove(learner);
 	}
 
-	public String getProposersGroupName() {
-		return PRP_GRP;
-	}
-
-	public String getAcceptorsGroupName() {
-		return ACC_GRP;
-	}
-
-	public String getLearnersGroupName() {
-		return LRN_GRP;
-	}
-
 	private void debug(String string) {
 		System.out.println("Paxos( " + sw_id + " , "+ System.currentTimeMillis()+" ) "+ string);
-	}
-
-	public void requestLog(String consensusStreamName, InetAddress address,
-			int port, LogFilter filter, boolean[] usedAcc) {
-		membership.group(getAcceptorsGroupName()).broadcast(
-				new PMLogRequest(consensusStreamName, address, port, filter,
-						usedAcc, sw_id));
 	}
 
 	class InstanceKeeper {
@@ -816,24 +724,6 @@ public final class PaxosStream implements Consensus, Runnable {
 			currentRound = nextRound;
 			b1Set = CollectionUtils.newSet();
 			nextRound += n_prp;
-		}
-
-		public InstanceKeeper unlog() throws IOException {
-			if (ConstantPool.PAXOS_USE_STABLE_STORAGE) {
-				if (FractalManager.getInstance().paxos.paxosUnLogThis(streamName, acc_id, this)) {
-					return this;
-				} else
-					return null;
-			} else {
-				throw new RuntimeException(
-						"Trying to unlog without using stable storage");
-			}
-		}
-
-		public void logYourself() throws IOException {
-			if (ConstantPool.PAXOS_USE_STABLE_STORAGE) {
-				FractalManager.getInstance().paxos.paxosLogThis(streamName, acc_id, this);
-			}
 		}
 
 		synchronized public void lock() {

@@ -9,16 +9,17 @@ package net.sourceforge.fractal.consensus.paxos;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.Serializable;
 
 import net.sourceforge.fractal.Messageable;
+
 /**   
 * @author L. Camargos
 * 
 */ 
 
-class PMNACK extends PMessage implements Cloneable{
-    private static final long serialVersionUID = Messageable.FRACTAL_MID;
+class PMNACK extends PMessage {
+
+	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
     int timestamp;
     
@@ -39,12 +40,6 @@ class PMNACK extends PMessage implements Cloneable{
     public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
         out.writeInt(timestamp);
-    }
-    
-    public Object clone(){
-    	PMNACK  m = (PMNACK)super.clone();
-    	m.timestamp= this.timestamp;
-    	return m;
     }
     
 }

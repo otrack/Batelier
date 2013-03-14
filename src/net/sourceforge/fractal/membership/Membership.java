@@ -33,6 +33,8 @@ import org.w3c.dom.NodeList;
 
 // FIXME thread safety
 // FIXME comment this class
+
+// FIXME use InetAdress instead of String
 public class Membership {
 	
 	// This node related fields.
@@ -252,7 +254,7 @@ public class Membership {
 	}
 	
     public synchronized boolean addNode(int swid, String ip){
-    	if( ip2swid.containsKey(ip)  ||  swid2ip.containsKey(swid))  return false;
+    	if( swid2ip.containsKey(swid))  return false;
     	swid2ip.put(swid, ip);
     	ip2swid.put(ip,swid);
     	if(ConstantPool.MEMBERSHIP_DL>1)
@@ -287,6 +289,7 @@ public class Membership {
     	return swid2ip.keySet();
     }
     
+    // FIXME
     public boolean contains(int swid){
     	return swid2ip.containsKey(swid);
     }

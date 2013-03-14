@@ -73,6 +73,10 @@ public abstract class Group extends Stream implements Comparable<Group>{
 		return swid2ip.keySet().iterator().next(); // lowest id
 	}
 	
+	public boolean iLead(){
+		return membership.myId()==swid2ip.keySet().iterator().next(); 
+	}
+	
 	public final boolean isLeading(int swid) throws IllegalArgumentException{
 		return swid==swid2ip.keySet().iterator().next(); // lowest id
 	}
@@ -200,8 +204,9 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	public synchronized boolean putNodes(Collection<Integer> nodes){
 		boolean ret = false;
 		for(int swid : nodes){
-			if(! membership.allNodes().contains(swid)) 
+			if(! membership.allNodes().contains(swid)){
 				throw new IllegalArgumentException("node "+swid+" does not exist");
+			}
 			ret |= putNode(swid, membership.adressOf(swid));
 		}
 		return ret;

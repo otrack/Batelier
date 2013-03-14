@@ -85,18 +85,9 @@ abstract public class MessageStream {
             /* Reliable Multicast */
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"multicast.MulticastMessage"));
             
-            /* Wan Atomic Broadcast */
-            idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"wanabcast.WanABCastInterGroupMessage"));
-            idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"wanabcast.WanABCastIntraGroupMessage"));
-            
             /* Wan Atomic Multicast */
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"wanamcast.WanAMCastInterGroupMessage"));
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"wanamcast.WanAMCastMessage"));
-            
-            /* Fault Tolerant Wan Atomic Multicast */
-            idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"ftwanamcast.FTWanAMCastInterGroupMessage"));
-            idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"ftwanamcast.FTWanAMCastInterGroupAck"));
-            idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"ftwanamcast.FTWanAMCastIntraGroupMessage"));
             
             /* State Machine Replication */
             idToMessage.put(idToMessage.size(), Class.forName(classPrefix+"replication.Command"));

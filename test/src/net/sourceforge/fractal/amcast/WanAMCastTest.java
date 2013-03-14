@@ -13,7 +13,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import net.sourceforge.fractal.MyLearner;
-import net.sourceforge.fractal.consensus.paxos.PaxosStream;
 import net.sourceforge.fractal.membership.Group;
 import net.sourceforge.fractal.membership.Membership;
 import net.sourceforge.fractal.multicast.MulticastStream;
@@ -32,7 +31,7 @@ public class WanAMCastTest {
 
 	private static final int nnodes=9;
 	private static final int ngroups=3;
-	private static final int nmessagesPerNode=10000;
+	private static final int nmessagesPerNode=5000;
 	
 	private static Map<Node,Membership> network;
 	private static Map<Node,WanAMCastStream> streams;
@@ -46,8 +45,7 @@ public class WanAMCastTest {
 		for(Node n : network.keySet()){
 			Group g = network.get(n).groupsOf(n.id).iterator().next();
 			MulticastStream multicast = new MulticastStream("rmcast"+n.id,g,network.get(n));
-			PaxosStream paxos = new PaxosStream("paxos",n.id,"LEADER_CONSTANT",g.name(),g.name(),g.name(),network.get(n));
-			WanAMCastStream amstream = new WanAMCastStream(n.id, g, "amcast"+n.id, multicast,paxos);
+			WanAMCastStream amstream = new WanAMCastStream(n.id, g, "amcast"+n.id, multicast);
 			streams.put(n,amstream);
 			MyLearner<WanAMCastMessage> l = new MyLearner<WanAMCastMessage>(new LinkedBlockingQueue<WanAMCastMessage>());
 			learners.put(n.id, l);
@@ -78,12 +76,26 @@ public class WanAMCastTest {
 		for(Node n: network.keySet()){
 			assert streams.get(n).isClean() : ""+streams.get(n).detailedInformation();
 		}
+		
 	}
 	
 
 	@AfterClass
 	public static void cleanup(){
 		DummyNetwork.destroy();
+	}
+	
+	public static void main(String args[]){
+		init();
+		WanAMCastTest test = new WanAMCastTest();
+		try {
+			test.simpleAtomicMulticastTest();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		cleanup();
+		System.exit(0);
 	}
 	
 	private class AMCastTestJob implements Callable<Integer>{
@@ -93,7 +105,7 @@ public class WanAMCastTest {
 		
 		public AMCastTestJob(Node node){
 			n = node;
-			amcastTime = new FloatValueRecorder(this+"#amcastTime");
+			amcastTime = new FloatValueRecorder(this+"#amcastTime(ms)");
 			amcastTime.setFormat("%a");
 		}
 		
@@ -141,7 +153,7 @@ public class WanAMCastTest {
 					
 			}
 						
-			System.out.println(this+", over, grabbing missing barrier(s) now");
+			System.out.println(this+", over, grabbing missing ("+missingBarriers+") barrier(s) now");
 			
 			while(missingBarriers!=0){
 				WanAMCastMessage m = learners.get(n.id).q.take();
@@ -156,7 +168,7 @@ public class WanAMCastTest {
 		
 		@Override
 		public String toString(){
-			return n.toString();
+			return "@"+n.id;
 		}
 
 	}

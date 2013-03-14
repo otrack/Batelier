@@ -25,77 +25,8 @@ public class GPaxosStreamManager {
 		streams = CollectionUtils.newMap();
 	}
 
-	public void load(Node config){
-
-		String streamName, cstructClassName;
-		boolean useFastBallot;
-		RECOVERY recovery;
-		int ltimeout, checkpointSize;
-		String pgroup, agroup, lgroup;
-
-		streamName = XMLUtils.getAttribByName((Element) config, "name");
-		pgroup= String.valueOf(XMLUtils.getAttribByName((Element) config, "pgroup"));
-		agroup= String.valueOf(XMLUtils.getAttribByName((Element) config, "agroup"));
-		lgroup= String.valueOf(XMLUtils.getAttribByName((Element) config, "lgroup"));
-
-		cstructClassName = String.valueOf(XMLUtils.getAttribByName((Element) config, "cstruct"));
-
-		if(XMLUtils.hasAttribByName((Element) config, "ltimeout"))
-			ltimeout = Integer.valueOf(XMLUtils.getAttribByName((Element) config, "ltimeout"));
-		else
-			ltimeout = 10000; 
-
-		if(XMLUtils.hasAttribByName((Element) config, "useFastBallot"))
-			useFastBallot = Boolean.valueOf(XMLUtils.getAttribByName((Element) config, "useFastBallot"));
-		else
-			useFastBallot = false;
-
-		if(XMLUtils.hasAttribByName((Element) config, "recovery")){
-
-			switch(Integer.valueOf(XMLUtils.getAttribByName((Element) config, "recovery"))){
-
-			default:
-			case 0 : recovery = RECOVERY.DEFAULT; break;
-			case 1 : recovery = RECOVERY.COORDINATED; break;
-			case 2 : recovery = RECOVERY.FGGC; break;
-
-			}
-
-		}else{
-			recovery = RECOVERY.DEFAULT;
-		}
-
-		if(XMLUtils.hasAttribByName((Element) config, "checkpointSize"))
-			checkpointSize = Integer.valueOf(XMLUtils.getAttribByName((Element) config, "checkpointSize"));
-		else
-			checkpointSize = 400;		
-
-		if( recovery == RECOVERY.FGGC
-				&&
-				! useFastBallot ){
-			throw new RuntimeException("Invalid usage: FGGC => useFastBallots");	
-		}
-
-		if(streams.containsKey(streamName)){
-			throw new RuntimeException("Stream "+streamName+" already exists.");
-		}
-
-		GPaxosStream s = new GPaxosStream(streamName,
-				FractalManager.getInstance().membership.myId(),
-				FractalManager.getInstance().membership.group(pgroup),
-				FractalManager.getInstance().membership.group(agroup),
-				FractalManager.getInstance().membership.group(lgroup),
-				cstructClassName,
-				useFastBallot,
-				recovery,
-				ltimeout,
-				checkpointSize);
-
-		streams.put(streamName,s);
-
-	}
-
 	public GPaxosStream getOrCreateGPaxosStream(
+			FractalManager manager,
 			String streamName,
 			String proposerGroupName,
 			String acceptorGroupName,
@@ -113,10 +44,10 @@ public class GPaxosStreamManager {
 		}
 
 		GPaxosStream s = new GPaxosStream(streamName,
-				FractalManager.getInstance().membership.myId(),
-				FractalManager.getInstance().membership.group(proposerGroupName),
-				FractalManager.getInstance().membership.group(acceptorGroupName),
-				FractalManager.getInstance().membership.group(learnerGroupName),
+				manager.membership.myId(),
+				manager.membership.group(proposerGroupName),
+				manager.membership.group(acceptorGroupName),
+				manager.membership.group(learnerGroupName),
 				cstructClassName,
 				useFastBallot,
 				recovery,

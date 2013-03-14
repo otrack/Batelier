@@ -17,10 +17,11 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Collection;
 
+import net.sourceforge.fractal.Message;
 import net.sourceforge.fractal.Messageable;
 import net.sourceforge.fractal.multicast.MulticastMessage;
 
-public class WanAMCastMessage extends MulticastMessage{
+public class WanAMCastMessage extends MulticastMessage implements Cloneable{
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
@@ -35,6 +36,12 @@ public class WanAMCastMessage extends MulticastMessage{
 		super(s,dest,gSource,swidSource);
 		this.clock = -1;
 		this.start = System.currentTimeMillis();
+	}
+	
+	public WanAMCastMessage(Serializable s, Collection<String> dest, String gSource, int clock, long startTime, int swidSource){
+		super(s,dest,gSource,swidSource);
+		this.clock = clock;
+		this.start = startTime;
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {
@@ -53,6 +60,14 @@ public class WanAMCastMessage extends MulticastMessage{
 	public String toString(){
 		return "<<"+getUniqueId()+","+clock+","+dest+","+gSource+">>";
 	}
+	
+    @Override
+    public Object clone() throws CloneNotSupportedException{
+    	WanAMCastMessage m = (WanAMCastMessage) super.clone();
+    	m.clock = this.clock;
+    	m.start = this.start;
+    	return m;
+    }
 
 	public boolean commute(WanAMCastMessage m){
 		if(m==this) return true;

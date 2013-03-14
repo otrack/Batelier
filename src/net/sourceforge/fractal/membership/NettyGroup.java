@@ -93,7 +93,7 @@ public class NettyGroup extends Group {
 	public synchronized boolean joinGroup() {
 
 		assert contains(membership.myId());
-		
+
 		if (ConstantPool.MEMBERSHIP_DL > 6)
 			System.out.print(this + " now ");
 
@@ -122,7 +122,7 @@ public class NettyGroup extends Group {
 
 		if (ConstantPool.MEMBERSHIP_DL > 6) 
 			System.out.println(" ... closing "+port);
-		
+
 		return true;
 	}
 	
@@ -197,7 +197,7 @@ public class NettyGroup extends Group {
 	}
 	
 	public String toString() {
-		return "NettyGroup:"+name+ ((ConstantPool.MEMBERSHIP_DL > 3) ? "@"+membership.myId() : "");
+		return "TCPGroup:"+name+ ((ConstantPool.MEMBERSHIP_DL > 3) ? "@"+membership.myId() : "");
 	}
 	
 	//
@@ -248,7 +248,7 @@ public class NettyGroup extends Group {
 
 			if( swid2Channel.containsKey(swid) ){
 				if (ConstantPool.MEMBERSHIP_DL > 1) 
-					System.out.println(this+" a channel already exists :");
+					System.out.println(this+" a channel already exists.");
 				return false;
 			}
 
@@ -291,21 +291,17 @@ public class NettyGroup extends Group {
 			System.out.println(this + " unicasting to "+swid+" by "+Thread.currentThread().getName());
 
 		if(isTerminated){
-			if (ConstantPool.MEMBERSHIP_DL > 0)
-				System.out.println(this + " service down.");
-			return;
+			throw new IllegalArgumentException(this + " service down.");
 		}
 		
 		if( !membership.contains(swid) ){
-			System.out.println( this + " node "+ swid+" does not exist.");
-			return;
+			throw new IllegalArgumentException(this+" node "+swid+" does not exist");
 		}
 		
 		// FIXME
 		if( !contains(swid) ){
 			if(!isDynamic){
-				System.out.println( this + " node "+ swid+" is not part of this group.");
-				return;
+				throw new IllegalArgumentException( this + " node "+ swid+" is not part of this group.");
 			}else{
 				putNode(swid, membership.adressOf(swid));
 			}
@@ -393,8 +389,8 @@ public class NettyGroup extends Group {
 		
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-			System.out.println("UnicastServerChannelHandler: " + e.toString());
-			e.getCause().printStackTrace();
+			if (ConstantPool.MEMBERSHIP_DL > 1)
+				System.out.println( this + " channel closed unexpectly; reason: "+e.getCause());					
 		}
 		
 	}

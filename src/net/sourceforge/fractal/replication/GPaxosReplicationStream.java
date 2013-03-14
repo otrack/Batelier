@@ -3,6 +3,7 @@ package net.sourceforge.fractal.replication;
 import java.io.Serializable;
 import java.util.Set;
 
+import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.Learner;
 import net.sourceforge.fractal.consensus.gpaxos.GPaxosStream;
 
@@ -11,8 +12,8 @@ public class GPaxosReplicationStream extends ReplicationStream implements Learne
 	* @author P. Sutra
 	* 
 	*/
-	public GPaxosReplicationStream(Set<Integer> c,GPaxosStream gp, int nbObjects){
-		super(c,gp,nbObjects);
+	public GPaxosReplicationStream(FractalManager manager, Set<Integer> c,GPaxosStream gp, int nbObjects){
+		super(manager, c,gp,nbObjects);
 	}
 
 	@Override

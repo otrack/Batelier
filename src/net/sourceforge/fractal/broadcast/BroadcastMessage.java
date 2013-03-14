@@ -18,7 +18,7 @@ import java.io.Serializable;
 import net.sourceforge.fractal.Messageable;
 import net.sourceforge.fractal.UMessage;
 
-public class BroadcastMessage extends UMessage implements Cloneable{
+public class BroadcastMessage extends UMessage {
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	
@@ -28,10 +28,6 @@ public class BroadcastMessage extends UMessage implements Cloneable{
 	
 	public BroadcastMessage(Serializable s, int swidSource){
 		super(s,swidSource);
-	}
-	
-	public Object clone(){
-		return (BroadcastMessage) super.clone();
 	}
 	
 	public void writeExternal(ObjectOutput out) throws IOException {

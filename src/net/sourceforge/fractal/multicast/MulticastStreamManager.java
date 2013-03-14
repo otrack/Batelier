@@ -8,14 +8,8 @@ package net.sourceforge.fractal.multicast;
 
 import java.util.Map;
 
-import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.utils.CollectionUtils;
-import net.sourceforge.fractal.utils.FractalUtils;
-import net.sourceforge.fractal.utils.XMLUtils;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 /**   
 * @author P. Sutra
@@ -29,27 +23,25 @@ public class MulticastStreamManager{
 	public MulticastStreamManager(){
 		 streams = CollectionUtils.newMap();
 	}
-	
-	public void load(Node config){
-		String range = XMLUtils.getAttribByName((Element) config, "instantiate");			
-		if(FractalUtils.inRange(range,FractalManager.getInstance().membership.myId())){
-			String streamName,myGroup;
-			streamName = XMLUtils.getAttribByName((Element) config, "name");				
-			myGroup = String.valueOf(XMLUtils.getAttribByName((Element) config, "group"));
-			streams.put(streamName, new MulticastStream(streamName,FractalManager.getInstance().membership.group(myGroup),FractalManager.getInstance().membership));	
-			if(ConstantPool.MULTICAST_DL > 0) System.out.println("Started multicast stream " + streamName + " on id " + FractalManager.getInstance().membership.myId());
-		}
-	}
-	
+		
 	public MulticastStream stream(String streamName){
 		return streams.get(streamName);
 	}
 
-	public MulticastStream getOrCreateRMCastStream(String streamName, String groupName) {
+	public MulticastStream getOrCreateRMCastStream(
+			FractalManager manager,
+			String streamName,
+			String groupName) {
+		
 		if(streams.get(streamName)!=null){
 			return streams.get(streamName);
 		}		
-		MulticastStream stream = new MulticastStream(streamName, FractalManager.getInstance().membership.group(groupName), FractalManager.getInstance().membership);
+		
+		MulticastStream stream = new MulticastStream(
+				streamName,
+				manager.membership.group(groupName),
+				manager.membership);
+		
 		streams.put(streamName,stream);
 		return stream;
 	}

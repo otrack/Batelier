@@ -11,8 +11,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.HashSet;
 
+import net.sourceforge.fractal.Message;
 import net.sourceforge.fractal.Messageable;
 import net.sourceforge.fractal.UMessage;
 
@@ -23,7 +23,7 @@ import net.sourceforge.fractal.UMessage;
 */
 
 	
-public class MulticastMessage extends UMessage{
+public class MulticastMessage extends UMessage implements Cloneable{
 	
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 	
@@ -60,6 +60,14 @@ public class MulticastMessage extends UMessage{
 		this.gSource = (String)in.readObject();
 	}
 	
+    @Override
+    public Object clone() throws CloneNotSupportedException{
+    	MulticastMessage m = (MulticastMessage) super.clone();
+    	m.dest = this.dest;
+    	m.gSource = this.gSource;
+    	return m;
+    }
+    
 	public String toString(){
 		return "<"+getUniqueId()+','+gSource+','+dest+","+serializable+">";
 	}

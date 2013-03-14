@@ -19,15 +19,10 @@ package net.sourceforge.fractal.abcast;
 
 import java.util.Map;
 
-import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.FractalManager;
-import net.sourceforge.fractal.membership.Membership;
+import net.sourceforge.fractal.broadcast.BroadcastStream;
+import net.sourceforge.fractal.consensus.paxos.PaxosStream;
 import net.sourceforge.fractal.utils.CollectionUtils;
-import net.sourceforge.fractal.utils.FractalUtils;
-import net.sourceforge.fractal.utils.XMLUtils;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 
 /**   
@@ -44,48 +39,18 @@ public class ABCastStreamManager {
     public ABCastStreamManager(){
     	streams = CollectionUtils.newMap();
     }
-
-    public void load(Node config){
-        
-        String range = XMLUtils.getAttribByName((Element) config, "instantiate");
-
-        String streamName, consensusStreamName, rbcastStreamName;
-        
-        if(FractalUtils.inRange(range,FractalManager.getInstance().membership.myId())){
-        	streamName = XMLUtils.getAttribByName((Element) config, "name");
-        	consensusStreamName = XMLUtils.getAttribByName((Element) config, "consensusStreamName");
-        	rbcastStreamName = XMLUtils.getAttribByName((Element) config, "rbcastStreamName");
-
-        	if(FractalManager.getInstance().broadcast.getOrCreateBroadcastStream(rbcastStreamName, rbcastStreamName)==null)
-        		throw new RuntimeException("RBCastStream "+rbcastStreamName+" does not exist");
-
-        	if(FractalManager.getInstance().paxos.stream(consensusStreamName)==null)
-        		throw new RuntimeException("PaxosStream"+consensusStreamName+" does not exist");
-
-        	streams.put(streamName, new ABCastStream(
-        			streamName,
-        			FractalManager.getInstance().membership.myId(),
-        			consensusStreamName,
-        			rbcastStreamName));
-
-        	if(ConstantPool.ABCAST_DL > 0) 
-        		System.out.println("Started ABCast stream " + streamName + " on id " + FractalManager.getInstance().membership.myId());
-        }
-    }
-    
-    public ABCastStream getOrCreateABCastStream(String streamName, String consensusStreamName, String rbcastStreamName){
-    	
-    	if(FractalManager.getInstance().broadcast.stream(rbcastStreamName)==null)
-    		throw new RuntimeException("RBCastStream "+rbcastStreamName+" does not exist");
-    	
+  
+    public ABCastStream getOrCreateABCastStream(FractalManager manager, String streamName, PaxosStream cs, BroadcastStream bs) {
+ 	    	
     	if(streams.get(streamName)!=null){
     		return streams.get(streamName);
     	}
+
     	ABCastStream stream = new ABCastStream(
     								streamName,
-    								FractalManager.getInstance().membership.myId(),
-    								consensusStreamName,
-    								rbcastStreamName);
+    								manager.membership.myId(),
+    								cs,
+    								bs);
     	streams.put(streamName,stream);
 		return stream;
     }

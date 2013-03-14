@@ -42,14 +42,18 @@ public abstract class ReplicationStream extends MutedStream implements Learner,R
 	
 	private Map<Long,Long> checksumValues;
 	
-	public ReplicationStream(Set<Integer> c, Stream s, long nbObjects){
+	public ReplicationStream(
+			FractalManager manager,
+			Set<Integer> c,
+			Stream s,
+			long nbObjects){
 		results = CollectionUtils.newMap();
 		clients = c;
 		for(int i : clients){
 			results.put(i, new Semaphore(0));
 		}
 		
-		myId = FractalManager.getInstance().membership.myId();
+		myId = manager.membership.myId();
 		stream=s;
 		emissionThread = new Thread(this, "ReplicationStream:emissionThread");
 		q = CollectionUtils.newBlockingQueue();

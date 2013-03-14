@@ -29,24 +29,13 @@ public class BroadcastStreamManager {
 		streams = CollectionUtils.newMap();
 	}
 	
-	public void load(Node config){
-
-		String range = XMLUtils.getAttribByName((Element) config, "instantiate");
-		String groupName, streamName = null;
-		
-		if(FractalUtils.inRange(range,FractalManager.getInstance().membership.myId())){
-			streamName = XMLUtils.getAttribByName((Element) config, "name");
-			groupName = String.valueOf(XMLUtils.getAttribByName((Element) config, "group"));
-			streams.put(streamName, new BroadcastStream(streamName, FractalManager.getInstance().membership.group(groupName), FractalManager.getInstance().membership.myId()));
-			if(ConstantPool.BROADCAST_DL > 0) System.out.println("Started broadcast stream " + streamName + " on id " + FractalManager.getInstance().membership.myId());
-		}
-	}
-	
-	public BroadcastStream getOrCreateBroadcastStream(String streamName, String groupName){
+	public BroadcastStream getOrCreateBroadcastStream(FractalManager manager, String streamName, String groupName){
 		if(streams.get(streamName)!=null){
 			return streams.get(streamName);
 		}
-		BroadcastStream stream =  new BroadcastStream(streamName, FractalManager.getInstance().membership.group(groupName), FractalManager.getInstance().membership.myId());
+		BroadcastStream stream =  new BroadcastStream(streamName,
+				manager.membership.group(groupName),
+				manager.membership.myId());
 		streams.put(streamName,stream);
 		return stream;
 	}

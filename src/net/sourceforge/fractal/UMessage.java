@@ -30,7 +30,7 @@ import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
  * @author P.Sutra
  *
  */
-public class UMessage extends Message implements Comparable<UMessage>{
+public class UMessage extends Message implements Comparable<UMessage>, Cloneable{
 
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
@@ -87,7 +87,15 @@ public class UMessage extends Message implements Comparable<UMessage>{
 		}
 		else return false;
     }
-	
+
+	@Override
+    public Object clone() throws CloneNotSupportedException{
+    	UMessage m = (UMessage) super.clone();
+    	m.swid = this.swid;
+    	m.serializable = this.serializable;
+    	return m;
+    }
+
 	
 	public int compareTo(UMessage arg0) {
 		if(arg0 == null || !(arg0 instanceof UMessage) )

@@ -42,8 +42,6 @@ public class ExecutorPool {
 			es.submit(factory.newInstance());
 	}
 	
-	
-	
 	public void submit(Runnable t) {
 		es.submit(t);
 	}

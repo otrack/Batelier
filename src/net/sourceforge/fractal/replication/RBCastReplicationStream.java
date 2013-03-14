@@ -3,6 +3,7 @@ package net.sourceforge.fractal.replication;
 import java.io.Serializable;
 import java.util.Set;
 
+import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.broadcast.BroadcastMessage;
 import net.sourceforge.fractal.broadcast.BroadcastStream;
 
@@ -11,8 +12,8 @@ public class RBCastReplicationStream extends ReplicationStream {
 	* @author P. Sutra
 	* 
 	*/
-	public RBCastReplicationStream(Set<Integer> c, BroadcastStream rbcast, int nbObjects){
-		super(c,rbcast,nbObjects);
+	public RBCastReplicationStream(FractalManager manager, Set<Integer> c, BroadcastStream rbcast, int nbObjects){
+		super(manager, c,rbcast,nbObjects);
 	}
 
 	@Override

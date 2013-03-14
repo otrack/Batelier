@@ -29,6 +29,7 @@ import net.sourceforge.fractal.Stream;
 import net.sourceforge.fractal.broadcast.BroadcastStream;
 import net.sourceforge.fractal.consensus.paxos.PaxosStream;
 import net.sourceforge.fractal.replication.Command;
+import net.sourceforge.fractal.replication.RBCastReplicationStream;
 import net.sourceforge.fractal.utils.CollectionUtils;
 
 
@@ -63,16 +64,17 @@ public final class ABCastStream extends Stream implements Learner, Runnable{
 	private Set<ABCastMessage> delivered;
 	private Set<ABCastMessage> toPropose; 
 
-	public ABCastStream(String name,
+	public ABCastStream(
+			String name,
 			Integer swid,
-			String consensusStreamName,
-			String rbcastStreamName) {
+			PaxosStream cs,
+			BroadcastStream bs) {
 
 		mySWid = swid;
 		streamName = name;
 
-		consensusStream = FractalManager.getInstance().paxos.stream(consensusStreamName);
-		rbcastStream = FractalManager.getInstance().broadcast.stream(rbcastStreamName);
+		consensusStream = cs;
+		rbcastStream = bs;
 		rbcastStream.registerLearner("ABCastMessage", this);
 		
 		toSend = CollectionUtils.newBlockingQueue();

@@ -12,13 +12,13 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 
 import net.sourceforge.fractal.Messageable;
-import net.sourceforge.fractal.utils.SerializationUtils;
+
 /**   
 * @author L. Camargos
 * 
 */ 
 
-class PMPhase2B extends PMessage implements Cloneable{
+class PMPhase2B extends PMessage {
   
 	private static final long serialVersionUID = Messageable.FRACTAL_MID;
 
@@ -54,13 +54,6 @@ class PMPhase2B extends PMessage implements Cloneable{
     
     public String toString(){
         return "("+type + ","+instance +","+serializable+")";
-    }
-    
-    public Object clone(){
-    	PMPhase2B m = (PMPhase2B)super.clone();
-    	m.timestamp = this.timestamp;
-        m.a_id= this.a_id;
-        return m;
     }
 
 }

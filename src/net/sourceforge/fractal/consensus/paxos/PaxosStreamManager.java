@@ -4,39 +4,27 @@ package net.sourceforge.fractal.consensus.paxos;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Vector;
 
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.FractalManager;
 import net.sourceforge.fractal.consensus.paxos.PaxosStream.InstanceKeeper;
-import net.sourceforge.fractal.membership.Membership;
+import net.sourceforge.fractal.membership.Group;
 import net.sourceforge.fractal.utils.CollectionUtils;
-import net.sourceforge.fractal.utils.FractalUtils;
 import net.sourceforge.fractal.utils.Log;
-import net.sourceforge.fractal.utils.XMLUtils;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 
 /**   
 * @author L. Camargos
@@ -49,98 +37,21 @@ public class PaxosStreamManager {
     
     //Log
     Log paxosLog;
-    private File envHomeDirectory;
-    private Environment logDBEnv;
     private Database logDB;
-    private PaxosDatabaseEntry dbEntry;
-    private PaxosDatabaseKey dbKey;
     
-    public PaxosStreamManager(String logName) {
-    	
+    public PaxosStreamManager() {    	
     	streams = CollectionUtils.newMap();
     	paxosLog = null;
-    	envHomeDirectory = null;
-    	dbEntry = new PaxosDatabaseEntry();
-    	dbKey = new PaxosDatabaseKey();
+    	new PaxosDatabaseEntry();
+    	new PaxosDatabaseKey();
     	
-        if(ConstantPool.PAXOS_USE_STABLE_STORAGE){
-            //Use stable storage for logs.
-            if(ConstantPool.PAXOS_USE_BDB){
-                //Use BDB
-                envHomeDirectory = new File(logName+"BDB");
-                if(!ConstantPool.PAXOS_STABLE_STORAGE_RECOVERY){
-                    Log.recursiveDelete(envHomeDirectory);
-                    envHomeDirectory.mkdir();
-                }
-                
-                try {
-                    /* Create an environment */
-                    EnvironmentConfig envConfig = new EnvironmentConfig();
-                    envConfig.setAllowCreate(true);    
-                    envConfig.setTransactional(true);
-                    envConfig.setTxnTimeout(0);
-                    envConfig.setLockTimeout(0);
-                    logDBEnv = new Environment(envHomeDirectory, envConfig);
-                    
-                    /* Make a database within that environment */
-                    Transaction txn = logDBEnv.beginTransaction(null, null);
-                    DatabaseConfig dbConfig = new DatabaseConfig();
-                    dbConfig.setTransactional(true); 
-                    dbConfig.setAllowCreate(true);
-                    dbConfig.setSortedDuplicates(false);
-                    logDB = logDBEnv.openDatabase(txn,"paxosLog",dbConfig);
-                    txn.commitSync();
-                    
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new RuntimeException("Error starting BDB!");
-                }
-            }else{
-                throw new RuntimeException("Not implemented yet !");
-            }
-        }
     }
-
-    public void load(Node config){
-        
-        String range = XMLUtils.getAttribByName((Element) config, "instantiate");
-
-        String streamName, coordPolicyName, ACC_GRP_name, PRP_GRP_name, LRN_GRP_name;
-        
-        streamName = XMLUtils.getAttribByName((Element) config, "name");
-        
-        Element el = (Element) XMLUtils.getChildByName(config, "CoordinatorPolicy");
-        coordPolicyName = el.getAttribute("type");
-        
-        el = (Element) XMLUtils.getChildByName(config, "ACCEPTOR_GROUP");
-        ACC_GRP_name = el.getAttribute("name");
-        
-        el = (Element) XMLUtils.getChildByName(config, "PROPOSER_GROUP");
-        PRP_GRP_name = el.getAttribute("name");
-        
-        el = (Element) XMLUtils.getChildByName(config, "LEARNER_GROUP");
-        LRN_GRP_name = el.getAttribute("name");
-
-        if(FractalUtils.inRange(range, FractalManager.getInstance().membership.myId())){
-        	streams.put(
-        			streamName,
-        			new PaxosStream(
-        					streamName,
-        					FractalManager.getInstance().membership.myId(),
-        					coordPolicyName,
-        					ACC_GRP_name,
-        					PRP_GRP_name,
-        					LRN_GRP_name,
-        					FractalManager.getInstance().membership));
-        	if(ConstantPool.PAXOS_DL > 0) System.out.println("Started Paxos stream " + streamName + " on id " + FractalManager.getInstance().membership.myId());
-        }
-    }    
-
     public PaxosStream getOrCreatePaxosStream(
+    		FractalManager manager,
     		String streamName,
-			String accGrpName,
-			String prpGrpName,
-			String lrnGrpName){
+			Group accp,
+			Group prp,
+			Group lrn){
     	
     	if(streams.get(streamName)!=null){
     		return streams.get(streamName);
@@ -148,12 +59,12 @@ public class PaxosStreamManager {
     	
     	PaxosStream stream = new PaxosStream(
     							streamName, 
-    							FractalManager.getInstance().membership.myId(), 
+    							manager.membership.myId(),
     							"LEADER_CONSTANT", 
-    							accGrpName, 
-    							prpGrpName,
-    							lrnGrpName,
-    							FractalManager.getInstance().membership);
+    							accp, 
+    							prp,
+    							lrn,
+    							manager.membership);
     	
     	streams.put(streamName,stream);
 		
