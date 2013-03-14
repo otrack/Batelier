@@ -251,6 +251,8 @@ public class WanAMCastStream extends Stream{
 				
 				while(!terminate){
 
+					// FIXME not fault-tolerant
+					
 					// 1 - Grab freshly received messages
 					received.clear();
 					if(myGroup.iLead()) received.add(intraGroupChannel.take());
