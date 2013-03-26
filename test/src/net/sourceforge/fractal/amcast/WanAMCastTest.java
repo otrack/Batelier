@@ -29,9 +29,9 @@ import org.junit.Test;
 
 public class WanAMCastTest {
 
-	private static final int nnodes=9;
-	private static final int ngroups=3;
-	private static final int nmessagesPerNode=5000;
+	private static final int nnodes=6;
+	private static final int ngroups=2;
+	private static final int nmessagesPerNode=50000;
 	
 	private static Map<Node,Membership> network;
 	private static Map<Node,WanAMCastStream> streams;
@@ -131,6 +131,7 @@ public class WanAMCastTest {
 						Integer g = rnd.nextInt(ngroups);
 						dst.add((network.get(n).allGroups().toArray(new Group[ngroups])[g]).name());
 					}
+					dst.addAll(network.get(n).allGroupNames());
 					msg = new WanAMCastMessage(new Byte[100],dst,network.get(n).groupsOf(n.id).iterator().next().name(),n.id);
 				}else{
 					dst.addAll(network.get(n).allGroupNames());

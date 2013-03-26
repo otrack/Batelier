@@ -175,7 +175,7 @@ public abstract class Group extends Stream implements Comparable<Group>{
 	
 	public synchronized boolean putNode(Integer swid, String ip) {
 		
-		if(ConstantPool.MEMBERSHIP_DL>1)
+		if(ConstantPool.MEMBERSHIP_DL>0)
 			System.out.println(this+" put node "+swid+" ("+ip+","+contains(swid)+")");
 		
     	if(contains(swid))  return false;

@@ -19,7 +19,7 @@ public class ConstantPool {
 	
 	public static final int PROTOCOL_MAGIC = 0xCA552DFA;
 	
-    public static final int MEMBERSHIP_DL=3;  //membership service.
+    public static final int MEMBERSHIP_DL=1;  //membership service.
     public static final int PAXOS_RECOVERY_DL = 0;
     
     /**

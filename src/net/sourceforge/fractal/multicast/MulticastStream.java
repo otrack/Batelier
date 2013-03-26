@@ -169,7 +169,8 @@ public final class MulticastStream extends Stream implements Learner {
 		}
 		
 		public String toString(){
-			return "Multicast:" +streamName+"@"+membership.myId();
+			return "Multicast:" +streamName+"@"+membership.myId()
+					+ (ConstantPool.MULTICAST_DL>10 ? ("("+System.currentTimeMillis()+")") : "" );
 		}
 		
 }

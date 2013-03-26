@@ -12,6 +12,8 @@ import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.Message;
 import net.sourceforge.fractal.utils.CollectionUtils;
 import net.sourceforge.fractal.utils.ExecutorPool;
+import net.sourceforge.fractal.utils.PerformanceProbe.TimeRecorder;
+import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
 
 import org.jboss.netty.bootstrap.Bootstrap;
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -54,11 +56,13 @@ public class NettyGroup extends Group {
 	
 	private ChannelGroup group = new DefaultChannelGroup();
 	
-	private static ChannelFactory cfactory = new NioClientSocketChannelFactory(ExecutorPool.getInstance().getExecutorService(),
-			ExecutorPool.getInstance().getExecutorService(),Runtime.getRuntime().availableProcessors());
+	private static ChannelFactory cfactory = new NioClientSocketChannelFactory(
+			ExecutorPool.getInstance().getExecutorService(),
+			ExecutorPool.getInstance().getExecutorService());
 	
-	private static ServerChannelFactory sfactory = new NioServerSocketChannelFactory(ExecutorPool.getInstance().getExecutorService(),
-				ExecutorPool.getInstance().getExecutorService(),Runtime.getRuntime().availableProcessors());
+	private static ServerChannelFactory sfactory = new NioServerSocketChannelFactory(
+			ExecutorPool.getInstance().getExecutorService(),
+			ExecutorPool.getInstance().getExecutorService());
 	
 	private ChannelPipelineFactory pipelineFactory = new ChannelPipelineFactory() {
 		public ChannelPipeline getPipeline() throws Exception {
@@ -70,6 +74,9 @@ public class NettyGroup extends Group {
 		}
 	};	
 	
+	private TimeRecorder broadcastTime;
+	private ValueRecorder handlerTime;
+	
 	private boolean isTerminated;
 	private boolean isDynamic;
 	
@@ -77,12 +84,30 @@ public class NettyGroup extends Group {
 		super(m, n, p);
 		isDynamic = false;
 		isTerminated = true;
+		
+		if (ConstantPool.MEMBERSHIP_DL > 0){
+			broadcastTime = new TimeRecorder(this+"#broadcastTime(msg)");	
+			broadcastTime.setFormat("%a");
+			handlerTime = new ValueRecorder(this+"#(max)handlerTime(ms)");
+			handlerTime.setFormat("%M");
+			handlerTime.setFactor(1000000);
+		}
+		
 	}
 	
 	public NettyGroup(Membership m, String n, int p, boolean dyn) {
 		super(m, n, p);
 		isDynamic = dyn;
 		isTerminated = true;
+		
+		if (ConstantPool.MEMBERSHIP_DL > 0){
+			broadcastTime = new TimeRecorder(this+"#broadcastTime(msg)");	
+			broadcastTime.setFormat("%a");
+			handlerTime = new ValueRecorder(this+"#(max)handlerTime(ms)");
+			handlerTime.setFormat("%M");
+			handlerTime.setFactor(1000000);
+		}
+
 	}
 	
 	//
@@ -197,7 +222,9 @@ public class NettyGroup extends Group {
 	}
 	
 	public String toString() {
-		return "TCPGroup:"+name+ ((ConstantPool.MEMBERSHIP_DL > 3) ? "@"+membership.myId() : "");
+		return "TCPGroup:"+name
+				+ ((ConstantPool.MEMBERSHIP_DL > 3) ? "@"+membership.myId() : "")
+				+ (ConstantPool.MEMBERSHIP_DL > 10 ? ("("+System.currentTimeMillis()+")") : "" );
 	}
 	
 	//
@@ -327,16 +354,16 @@ public class NettyGroup extends Group {
 	}
 	
 	private void performBroadcast(Message m){
-
-		if (ConstantPool.MEMBERSHIP_DL > 6)
-			System.out.println( this + " broadcasting "+m);		
-
+		
 		if(isTerminated){
 			if (ConstantPool.MEMBERSHIP_DL > 0)
 				System.out.println(this + " service down ");
 			return;
 		}
-
+		
+		if (ConstantPool.MEMBERSHIP_DL > 0)
+			broadcastTime.start();
+			
 		try{
 				
 			// FIXME
@@ -349,6 +376,9 @@ public class NettyGroup extends Group {
 			
 			m.source = membership.myId();
 			group.write(m);
+
+			if (ConstantPool.MEMBERSHIP_DL > 6)
+				System.out.println( this + " broadcasted "+m);		
 			
 		}catch (Exception e) {
 
@@ -357,6 +387,9 @@ public class NettyGroup extends Group {
 
 		}
 
+		if (ConstantPool.MEMBERSHIP_DL > 0)
+			broadcastTime.stop();
+		
 		
 	}
 	
@@ -368,18 +401,37 @@ public class NettyGroup extends Group {
 		
 		@Override
 		public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+						
 			try {
+				
+				long start;
+				if (ConstantPool.MEMBERSHIP_DL > 0)
+					start = System.nanoTime();
+				
 				Message m = (Message)e.getMessage();
+
+				if (ConstantPool.MEMBERSHIP_DL > 6)
+					System.out.println( this + " received "+m);
+									
 				if( isDynamic && ! contains(m.source) ){
 					Channel c = ctx.getChannel();
 					putNode(m.source, ((InetSocketAddress)c.getRemoteAddress()).getAddress().getHostAddress());
 					registerChannel(m.source, c);
 				}
 				deliver(m);
+				
+				if (ConstantPool.MEMBERSHIP_DL > 0){
+					handlerTime.add(System.nanoTime()-start);
+					if((System.nanoTime()-start)>100000000)
+						System.err.println(" Handling "+m.getMessageType()+" is too long ! ("+((System.nanoTime()-start)/1000000)+"ms)" );
+				}
+				
+				
 			} catch (Exception e1) {
 				e1.printStackTrace();
 				System.out.println(ctx.getChannel().getRemoteAddress());
-			}			
+			}	
+						
 		}
 		
 		@Override
@@ -391,6 +443,12 @@ public class NettyGroup extends Group {
 		public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 			if (ConstantPool.MEMBERSHIP_DL > 1)
 				System.out.println( this + " channel closed unexpectly; reason: "+e.getCause());					
+		}
+		
+		public String toString() {
+			return "TCPGroup:"+name
+					+ ((ConstantPool.MEMBERSHIP_DL > 3) ? "@"+membership.myId() : "")
+					+ (ConstantPool.MEMBERSHIP_DL > 10 ? ("("+System.currentTimeMillis()+")") : "" );
 		}
 		
 	}

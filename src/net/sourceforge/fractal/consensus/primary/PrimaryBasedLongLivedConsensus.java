@@ -26,8 +26,7 @@ public class PrimaryBasedLongLivedConsensus<C> extends LongLivedConsensus<C> imp
 		
 		if(group.iLead()){
 			// FIXME
-			group.broadcastToOthers(new PrimaryBasedLongLivedConsensusMessage<C>(c));
-			return c;
+			group.broadcast(new PrimaryBasedLongLivedConsensusMessage<C>(c));
 		}
 		
 		try {

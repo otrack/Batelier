@@ -257,7 +257,7 @@ public class Membership {
     	if( swid2ip.containsKey(swid))  return false;
     	swid2ip.put(swid, ip);
     	ip2swid.put(ip,swid);
-    	if(ConstantPool.MEMBERSHIP_DL>1)
+    	if(ConstantPool.MEMBERSHIP_DL>0)
     		System.out.println(this+" add node "+swid);
     	return true;
     }

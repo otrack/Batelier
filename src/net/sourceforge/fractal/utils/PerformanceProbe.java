@@ -483,7 +483,7 @@ public abstract class PerformanceProbe {
 		 * @return {@code true} if this call updated the min or the max value
 		 *         and {@code false} otherwise.
 		 */
-		public boolean add(long value) {
+		public synchronized boolean add(long value) {
 
 			// update count
 			valueCount += 1;

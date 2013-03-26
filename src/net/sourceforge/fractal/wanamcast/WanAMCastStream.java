@@ -10,20 +10,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
-
-import junit.framework.Assert;
 
 import net.sourceforge.fractal.ConstantPool;
 import net.sourceforge.fractal.Learner;
 import net.sourceforge.fractal.Stream;
 import net.sourceforge.fractal.consensus.LongLivedConsensus;
-import net.sourceforge.fractal.consensus.TrivialLongLivedConsensus;
 import net.sourceforge.fractal.consensus.primary.PrimaryBasedLongLivedConsensus;
 import net.sourceforge.fractal.membership.Group;
 import net.sourceforge.fractal.multicast.MulticastStream;
@@ -40,15 +35,15 @@ import net.sourceforge.fractal.utils.PerformanceProbe.ValueRecorder;
 
 public class WanAMCastStream extends Stream{
 
-	private ValueRecorder aDeliveredSize;
-	private ValueRecorder stagesSize;
+	private ValueRecorder aDeliveredSize, stagesSize;
+	private FloatValueRecorder ratioLocalMsgs;
 	private TimeRecorder consensusLatency, coreLoopLatency, sideLoopLatency;
 	private Map<WanAMCastMessage,Long> convoyEffectTracker;
 	private FloatValueRecorder convoyEffect;
 	private ValueRecorder checksum;
 	private FloatValueRecorder latency;
 	
-	private int deliveredCnt = 0;
+	private int deliveredCnt = 0, localdeliveredCnt = 0;
 	@SuppressWarnings("unused")
 	private String myName;
 	int mySWid;
@@ -83,7 +78,7 @@ public class WanAMCastStream extends Stream{
 
 		this.intraGroupChannel =  CollectionUtils.newBlockingQueue();
 		
-		this.aDelivered = CollectionUtils.newBoundedSet(5000);
+		this.aDelivered = CollectionUtils.newBoundedSet(50000);
 //		aDelivered = CollectionUtils.newBoundedSet(
 //				new Comparator<WanAMCastMessage>() {
 //					private final ClassCastException ex = new ClassCastException();
@@ -113,10 +108,10 @@ public class WanAMCastStream extends Stream{
 			stagesSize.setFormat("%M");
 			consensusLatency = new TimeRecorder(this+"#consensusLatency(ms)");
 			consensusLatency.setFormat("%a");
-			coreLoopLatency =  new TimeRecorder(this+"#coreLoopLatency(ms)");
-			coreLoopLatency.setFormat("%a");
-			sideLoopLatency =  new TimeRecorder(this+"#sideLoopLatency(ms)");
-			sideLoopLatency.setFormat("%a");
+			coreLoopLatency =  new TimeRecorder(this+"#(max)coreLoopLatency(ms)");
+			coreLoopLatency.setFormat("%M");
+			sideLoopLatency =  new TimeRecorder(this+"#(max)sideLoopLatency(ms)");
+			sideLoopLatency.setFormat("%M");
 			checksum = new ValueRecorder(this+"#checksum");
 			checksum.setFormat("%t");
 			convoyEffectTracker = new HashMap<WanAMCastMessage, Long>();
@@ -124,6 +119,8 @@ public class WanAMCastStream extends Stream{
 			convoyEffect.setFormat("%a");
 			latency = new FloatValueRecorder(this+"#latency(ms)");
 			latency.setFormat("%a");
+			ratioLocalMsgs = new FloatValueRecorder(this+"ratioLocalMsgs");
+			ratioLocalMsgs.setFormat("%a");
 		}
 		
 	}
@@ -184,10 +181,12 @@ public class WanAMCastStream extends Stream{
 			for(Learner l : learners.get(m.getMessageType())){
 				if(ConstantPool.WANAMCAST_DL > 0){
 					deliveredCnt++;
+					if(m.dest.size()==1) localdeliveredCnt++;
 					checksum.add(m.getUniqueId().hashCode()%deliveredCnt);
+					ratioLocalMsgs.add((double)localdeliveredCnt/(double)deliveredCnt);
 				}
 				if(ConstantPool.WANAMCAST_DL > 4)
-					System.out.println(this+" I deliver "+m);
+					System.out.println(this+" I AM-deliver "+m);
 				l.learn(this,(m));
 			}
 		
@@ -196,15 +195,13 @@ public class WanAMCastStream extends Stream{
 				System.out.println(this+" got a "+ m.getMessageType() +" to nobody");
 		}
 	
-		synchronized(aDelivered){
-			aDelivered.add(m);
-			intraGroupChannel.remove(m);
-			stages.remove(m);
-			stage1.remove(m); 
-			if(msg2ts.containsKey(m)){
-				ts2msg.remove(msg2ts.get(m));
-				msg2ts.remove(m);
-			}
+		aDelivered.add(m);
+		intraGroupChannel.remove(m);
+		stages.remove(m);
+		stage1.remove(m); 
+		if(msg2ts.containsKey(m)){
+			ts2msg.remove(msg2ts.get(m));
+			msg2ts.remove(m);
 		}
 			
 		// Performance tracking
@@ -221,8 +218,15 @@ public class WanAMCastStream extends Stream{
 		
 	}
 
+	private String getString(){
+		return "WanAMCast@"
+				+ mySWid
+				+ (ConstantPool.WANAMCAST_DL>10 ?
+						("("+System.currentTimeMillis()+")") : "" );
+	}
+	
 	public String toString(){
-		return "WanAMCast@"+mySWid;
+		return getString();
 	}
 
 	public boolean isClean(){
@@ -263,7 +267,8 @@ public class WanAMCastStream extends Stream{
 					
 					// 2 - Compute message to propose to consensus
 					proposed = new ArrayList<WanAMCastMessage>();
-					
+
+					coreLoopLatency.start();
 					synchronized(aDelivered){
 					
 						for(WanAMCastMessage m : received){
@@ -282,14 +287,20 @@ public class WanAMCastStream extends Stream{
 						}
 
 					}
+					coreLoopLatency.stop();
 
+					
 					if(ConstantPool.WANAMCAST_DL > 6)
 						System.out.println(this+ " Calling consensus in round "+ K);
+					if(ConstantPool.WANAMCAST_DL > 0)
+						consensusLatency.start();
 
 					// 2 - Call the long-lived consensus object
 					decided = consensus.propose(proposed);
 					if(ConstantPool.WANAMCAST_DL > 9)
 						System.out.println(this+ " I decided in round "+ K+" messages "+decided);
+					if(ConstantPool.WANAMCAST_DL > 0)
+						consensusLatency.stop();
 
 					// 4 - Timestamp messages, stages advancements and timestamps propagation
 					maxClock=K;
@@ -380,7 +391,7 @@ public class WanAMCastStream extends Stream{
 		}
 		
 		public String toString(){
-			return "WanAMCast@"+mySWid;
+			return getString();
 		}
 
 	}
@@ -398,10 +409,10 @@ public class WanAMCastStream extends Stream{
 			}
 
 			sideLoopLatency.start();
-			
-			for(WanAMCastMessage m : msgs){
 
-				synchronized(aDelivered){
+			synchronized(aDelivered){
+
+ 				for(WanAMCastMessage m : msgs){
 
 					if( aDelivered.contains(m) ) {
 						if(ConstantPool.WANAMCAST_DL > 3)
@@ -420,16 +431,16 @@ public class WanAMCastStream extends Stream{
 						}
 					}
 
-				}
+				} // end for
 
-			} // end for
+			}
 			
 			sideLoopLatency.stop();
 
 		}
 
 		public String toString(){
-			return "WanAMCast@"+mySWid;
+			return getString();
 		}
 		
 	}
@@ -439,6 +450,8 @@ public class WanAMCastStream extends Stream{
 	//
 	
 	private void enterStageZero(WanAMCastMessage m){
+		if(ConstantPool.WANAMCAST_DL > 0)
+			stagesSize.add(stages.size());
 		stages.put(m, 0);
 		try {
 			intraGroupChannel.put(m);
@@ -490,6 +503,8 @@ public class WanAMCastStream extends Stream{
 	}
 	
 	private void enterStageThree(WanAMCastMessage m){
+		if(ConstantPool.WANAMCAST_DL > 0)
+			stagesSize.add(stages.size());
 		stages.put(m, 3);
 		updateLargestTimestamp(m);
 	}
