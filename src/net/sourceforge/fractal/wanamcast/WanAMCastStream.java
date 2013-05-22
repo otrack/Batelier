@@ -67,8 +67,11 @@ public class WanAMCastStream extends Stream{
 	
 	// local Variables going to global so as to enhance the code
 	private List<String> toMyGroup;
+	
+	// local variable indicating if the primitive provides acyclicity or not.
+	private boolean acycl;
 
-	public WanAMCastStream(int id, Group g, String streamName, MulticastStream multicast){
+	public WanAMCastStream(int id, Group g, String streamName, MulticastStream multicast, boolean acycl){
 		this.mySWid = id;
 		this.myGroup = g;
 		this.myName = streamName;
@@ -76,6 +79,8 @@ public class WanAMCastStream extends Stream{
 		this.multicastStream = multicast;
 		this.consensus = new PrimaryBasedLongLivedConsensus(myGroup);
 
+		this.acycl = acycl;
+		
 		this.intraGroupChannel =  CollectionUtils.newBlockingQueue();
 		
 		this.aDelivered = CollectionUtils.newBoundedSet(50000);
@@ -321,7 +326,7 @@ public class WanAMCastStream extends Stream{
 								continue;
 							}
 
-							if(m.dest.size()==1){ 
+							if(m.dest.size()==1 || ! acycl){ 
 								assert m.dest.contains(myGroup.name()) && !msg2ts.containsKey(m);
 								deliver(m);
 								continue;

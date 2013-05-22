@@ -44,11 +44,34 @@ public class WanAMCastStreamManager {
 				manager.membership.myId(),
 				manager.membership.group(groupName),
 				streamName,
-				manager.multicast.stream(rmcastName));
+				manager.multicast.stream(rmcastName),
+				true);
 		streams.put(streamName,stream);
 		return stream;
 	}
 
+	public WanAMCastStream getOrCreateWanNonAcyclicAMCastStream(
+			FractalManager manager,
+			String streamName,
+			String groupName, 
+			String rmcastName,
+			String rbcastName){
+
+		if(streams.get(streamName)!=null){
+			return streams.get(streamName);
+		}
+
+		WanAMCastStream stream = new WanAMCastStream(
+				manager.membership.myId(),
+				manager.membership.group(groupName),
+				streamName,
+				manager.multicast.stream(rmcastName),
+				false);
+		streams.put(streamName,stream);
+		return stream;
+	}
+	
+	
 	public WanAMCastStream stream(String streamName){
 		return streams.get(streamName);
 	}	

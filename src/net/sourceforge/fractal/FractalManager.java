@@ -140,7 +140,17 @@ public class FractalManager {
     	return wanamcast.getOrCreateWanAMCastStream(this, streamName,groupName,streamName,streamName);
     }
     
-
+    /**
+     * Return an atomic multicast stream having the name <p>streamName<p> for the group <p>groupName</p>.
+     * The stream does not provide the acyclicity property; it is created if necessary.
+     */
+    public WanAMCastStream getOrCreateWanNonAcyclicAMCastStream(String streamName, String groupName) {
+    	getOrCreatePaxosStream(streamName, groupName);
+    	getOrCreateMulticastStream(streamName, groupName);
+    	return wanamcast.getOrCreateWanNonAcyclicAMCastStream(this, streamName,groupName,streamName,streamName);
+    }
+    
+    
     public void loadFile(String configFile) throws UnknownHostException{
     	
      	if(XMLUtils.openFile(configFile)==null){

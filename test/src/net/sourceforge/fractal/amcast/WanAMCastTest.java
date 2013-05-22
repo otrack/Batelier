@@ -29,9 +29,9 @@ import org.junit.Test;
 
 public class WanAMCastTest {
 
-	private static final int nnodes=6;
+	private static final int nnodes=4;
 	private static final int ngroups=2;
-	private static final int nmessagesPerNode=50000;
+	private static final int nmessagesPerNode=5000;
 	
 	private static Map<Node,Membership> network;
 	private static Map<Node,WanAMCastStream> streams;
@@ -45,7 +45,7 @@ public class WanAMCastTest {
 		for(Node n : network.keySet()){
 			Group g = network.get(n).groupsOf(n.id).iterator().next();
 			MulticastStream multicast = new MulticastStream("rmcast"+n.id,g,network.get(n));
-			WanAMCastStream amstream = new WanAMCastStream(n.id, g, "amcast"+n.id, multicast);
+			WanAMCastStream amstream = new WanAMCastStream(n.id, g, "amcast"+n.id, multicast,false);
 			streams.put(n,amstream);
 			MyLearner<WanAMCastMessage> l = new MyLearner<WanAMCastMessage>(new LinkedBlockingQueue<WanAMCastMessage>());
 			learners.put(n.id, l);
